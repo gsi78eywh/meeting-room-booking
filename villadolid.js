@@ -1,6 +1,85 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const TOTAL_ROOMS = 8;
+  // Storage keys
+  const STORAGE_KEY_BOOKINGS = "rafiBookings";
+  const STORAGE_KEY_MODS = "rafiRowModifications";
+  const STORAGE_KEY_ROOMS = "rafiRooms";
 
+  // Default rooms
+  const DEFAULT_ROOMS = [
+    {
+      id: "room-1",
+      name: "Collaboration Hub",
+      floor: "2nd Floor",
+      capacity: 14,
+      amenities: ["Aircon", "TV/Projector", "Whiteboard"],
+      status: "Active"
+    },
+    {
+      id: "room-2",
+      name: "Meeting Room A",
+      floor: "3rd Floor",
+      capacity: 8,
+      amenities: ["Aircon", "Whiteboard"],
+      status: "Active"
+    },
+    {
+      id: "room-3",
+      name: "Boardroom",
+      floor: "4th Floor",
+      capacity: 10,
+      amenities: ["Aircon", "TV/Projector", "Whiteboard"],
+      status: "Active"
+    },
+    {
+      id: "room-4",
+      name: "Focus Room",
+      floor: "3rd Floor",
+      capacity: 4,
+      amenities: ["Aircon"],
+      status: "Active"
+    },
+    {
+      id: "room-5",
+      name: "3rd Floor Meeting Room",
+      floor: "3rd Floor",
+      capacity: 8,
+      amenities: ["Aircon", "Whiteboard"],
+      status: "Active"
+    },
+    {
+      id: "room-6",
+      name: "5th Floor REA Training Room",
+      floor: "5th Floor",
+      capacity: 35,
+      amenities: ["Aircon", "TV/Projector"],
+      status: "Active"
+    },
+    {
+      id: "room-7",
+      name: "6th Floor Meeting Room",
+      floor: "6th Floor",
+      capacity: 14,
+      amenities: ["Aircon", "TV/Projector", "Whiteboard"],
+      status: "Active"
+    },
+    {
+      id: "room-8",
+      name: "Roof Deck Meeting Room",
+      floor: "Roof Deck",
+      capacity: 8,
+      amenities: ["Aircon", "Whiteboard"],
+      status: "Active"
+    }
+  ];
+
+  // Navigation tab elements
+  const tabReservations = document.querySelector("#tab-reservations");
+  const tabRooms = document.querySelector("#tab-rooms");
+  const viewReservations = document.querySelector("#view-reservations");
+  const viewRooms = document.querySelector("#view-rooms");
+  const tabRoomsCount = document.querySelector("#tab-rooms-count");
+
+  // Reservations elements
   const tbody = document.querySelector("#bookings-tbody");
   const noBookingsRow = document.querySelector("#no-bookings-row");
   const dateFilter = document.querySelector("#booking-date-filter");
@@ -44,17 +123,57 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Cancel Confirmation Modal elements
   const cancelConfirmModal = document.querySelector("#cancel-confirm-modal");
   const cancelModalSummary = document.querySelector("#cancel-modal-summary");
-  const cancelModalToast = document.querySelector("#cancel-modal-toast");
   const btnConfirmCancellation = document.querySelector("#btn-confirm-cancellation");
+
+  // 4. Room Management elements
+  const roomsGridContainer = document.querySelector("#rooms-grid-container");
+  const btnOpenAddRoom = document.querySelector("#btn-open-add-room");
+  const roomSearchFilter = document.querySelector("#room-search-filter");
+  const roomFloorFilter = document.querySelector("#room-floor-filter");
+  const roomStatusFilter = document.querySelector("#room-status-filter");
+  const roomResetFilter = document.querySelector("#room-reset-filter");
+
+  // Room Modal elements
+  const roomManageModal = document.querySelector("#room-manage-modal");
+  const roomModalTitle = document.querySelector("#room-modal-title");
+  const roomModalSubtitle = document.querySelector("#room-modal-subtitle");
+  const roomFormId = document.querySelector("#room-form-id");
+  const roomFormName = document.querySelector("#room-form-name");
+  const roomFormFloor = document.querySelector("#room-form-floor");
+  const roomFormCapacity = document.querySelector("#room-form-capacity");
+  const roomFormStatus = document.querySelector("#room-form-status");
+  const roomFormAmenities = document.querySelector("#room-form-amenities");
+  const roomModalToast = document.querySelector("#room-modal-toast");
+  const btnSaveRoom = document.querySelector("#btn-save-room");
 
   const closeModalButtons = Array.from(document.querySelectorAll(".modal-close"));
 
   let currentActiveRow = null;
   let activePeriod = "all"; // "all" | "day" | "week" | "month" | "custom"
 
-  // Storage keys
-  const STORAGE_KEY_BOOKINGS = "rafiBookings";
-  const STORAGE_KEY_MODS = "rafiRowModifications";
+  /* =========================================
+     ROOM MANAGEMENT DATA HELPERS
+  ========================================= */
+
+  const getStoredRooms = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_ROOMS);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {}
+    try {
+      localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(DEFAULT_ROOMS));
+    } catch (e) {}
+    return DEFAULT_ROOMS;
+  };
+
+  const saveRooms = (roomsList) => {
+    try {
+      localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(roomsList));
+      sessionStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(roomsList));
+    } catch (e) {}
+  };
 
   const escHtml = (str) => {
     return String(str ?? "")
@@ -65,15 +184,331 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   };
 
-  const showModifyToast = (message, isError = false) => {
-    if (!modifyModalToast) return;
-    modifyModalToast.textContent = message;
-    modifyModalToast.className = `modal-toast ${isError ? "error" : ""}`;
-    modifyModalToast.style.display = "block";
+  const showToastMsg = (toastEl, message, isError = false) => {
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.className = `modal-toast ${isError ? "error" : ""}`;
+    toastEl.style.display = "block";
     setTimeout(() => {
-      modifyModalToast.style.display = "none";
+      toastEl.style.display = "none";
     }, 2800);
   };
+
+  /* =========================================
+     NAVIGATION: 1-CLICK TAB SWITCHING
+  ========================================= */
+
+  const switchTab = (tabName) => {
+    if (tabName === "rooms") {
+      if (tabRooms) {
+        tabRooms.classList.add("active");
+        tabRooms.setAttribute("aria-selected", "true");
+      }
+      if (tabReservations) {
+        tabReservations.classList.remove("active");
+        tabReservations.setAttribute("aria-selected", "false");
+      }
+      if (viewRooms) viewRooms.style.display = "block";
+      if (viewReservations) viewReservations.style.display = "none";
+      renderRoomsGrid();
+    } else {
+      if (tabReservations) {
+        tabReservations.classList.add("active");
+        tabReservations.setAttribute("aria-selected", "true");
+      }
+      if (tabRooms) {
+        tabRooms.classList.remove("active");
+        tabRooms.setAttribute("aria-selected", "false");
+      }
+      if (viewReservations) viewReservations.style.display = "block";
+      if (viewRooms) viewRooms.style.display = "none";
+      loadStoredBookings();
+      applyFilters();
+    }
+  };
+
+  if (tabReservations) {
+    tabReservations.addEventListener("click", () => switchTab("reservations"));
+  }
+  if (tabRooms) {
+    tabRooms.addEventListener("click", () => switchTab("rooms"));
+  }
+
+  /* =========================================
+     ROOM MANAGEMENT: RENDER & ACTIONS
+  ========================================= */
+
+  const renderRoomsGrid = () => {
+    if (!roomsGridContainer) return;
+    const rooms = getStoredRooms();
+
+    // Update count badges & dynamic total rooms
+    if (tabRoomsCount) {
+      tabRoomsCount.textContent = String(rooms.length);
+    }
+
+    const searchQuery = (roomSearchFilter?.value || "").trim().toLowerCase();
+    const floorFilter = (roomFloorFilter?.value || "").trim().toLowerCase();
+    const statusFilter = (roomStatusFilter?.value || "").trim().toLowerCase();
+
+    const filteredRooms = rooms.filter((r) => {
+      const matchSearch =
+        !searchQuery ||
+        r.name.toLowerCase().includes(searchQuery) ||
+        r.floor.toLowerCase().includes(searchQuery) ||
+        (Array.isArray(r.amenities) && r.amenities.some((a) => a.toLowerCase().includes(searchQuery)));
+
+      const matchFloor = !floorFilter || r.floor.toLowerCase() === floorFilter;
+      const matchStatus = !statusFilter || (r.status || "active").toLowerCase() === statusFilter;
+
+      return matchSearch && matchFloor && matchStatus;
+    });
+
+    if (roomResetFilter) {
+      roomResetFilter.disabled = !(searchQuery || floorFilter || statusFilter);
+    }
+
+    if (filteredRooms.length === 0) {
+      roomsGridContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; background: var(--panel-bg); border-radius: 14px; border: 1px solid var(--line);">
+          <p style="font-size: 16px; font-weight: 700; color: var(--heading-deep); margin: 0 0 6px;">No meeting rooms found</p>
+          <p style="font-size: 14px; color: var(--muted); margin: 0 0 16px;">Try adjusting your search query or clear the filter.</p>
+          <button type="button" class="empty-clear-link" id="btn-rooms-empty-clear">Clear room filters</button>
+        </div>
+      `;
+      const btnClearEmpty = roomsGridContainer.querySelector("#btn-rooms-empty-clear");
+      if (btnClearEmpty) {
+        btnClearEmpty.addEventListener("click", () => {
+          if (roomSearchFilter) roomSearchFilter.value = "";
+          if (roomFloorFilter) roomFloorFilter.value = "";
+          if (roomStatusFilter) roomStatusFilter.value = "";
+          renderRoomsGrid();
+        });
+      }
+      return;
+    }
+
+    roomsGridContainer.innerHTML = "";
+
+    filteredRooms.forEach((room) => {
+      const isMaint = (room.status || "Active").toLowerCase() === "maintenance";
+      const statusClass = isMaint ? "status-maintenance" : "status-active";
+      const statusLabel = isMaint ? "Under Maintenance" : "Active";
+      const toggleLabel = isMaint ? "Set Active" : "Set Maintenance";
+
+      const amenitiesHtml = (room.amenities || [])
+        .map((a) => `<span class="room-amenity-pill">${escHtml(a)}</span>`)
+        .join("");
+
+      const card = document.createElement("article");
+      card.className = "room-card";
+      card.dataset.roomId = room.id;
+
+      card.innerHTML = `
+        <div>
+          <div class="room-card-top">
+            <h3 class="room-card-name">${escHtml(room.name)}</h3>
+            <span class="status-pill ${statusClass}">${statusLabel}</span>
+          </div>
+
+          <div class="room-card-details">
+            <div class="room-card-meta">
+              <span>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${escHtml(room.floor)}
+              </span>
+              <span>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                ${escHtml(room.capacity)} pax
+              </span>
+            </div>
+
+            <div class="room-amenities-wrap">
+              ${amenitiesHtml || '<span style="font-size: 12px; color: var(--muted);">Standard equipment</span>'}
+            </div>
+          </div>
+        </div>
+
+        <div class="room-card-actions">
+          <div class="room-card-left-actions">
+            <button type="button" class="btn-room-edit" aria-label="Edit ${escHtml(room.name)}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Edit</span>
+            </button>
+            <button type="button" class="btn-room-toggle" aria-label="${toggleLabel} for ${escHtml(room.name)}">
+              ${toggleLabel}
+            </button>
+          </div>
+
+          <button type="button" class="btn-room-delete" title="Delete room" aria-label="Delete ${escHtml(room.name)}">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      `;
+
+      // 1-Click Edit Room
+      const editBtn = card.querySelector(".btn-room-edit");
+      if (editBtn) {
+        editBtn.addEventListener("click", () => openEditRoomModal(room));
+      }
+
+      // 1-Click Toggle Status
+      const toggleBtn = card.querySelector(".btn-room-toggle");
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          const allRooms = getStoredRooms();
+          const target = allRooms.find((r) => r.id === room.id);
+          if (target) {
+            target.status = (target.status || "Active").toLowerCase() === "active" ? "Maintenance" : "Active";
+            saveRooms(allRooms);
+            renderRoomsGrid();
+            applyFilters();
+          }
+        });
+      }
+
+      // 1-Click Delete Room
+      const deleteBtn = card.querySelector(".btn-room-delete");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          const confirmed = window.confirm(`Are you sure you want to remove ${room.name}?`);
+          if (!confirmed) return;
+          const allRooms = getStoredRooms();
+          const updated = allRooms.filter((r) => r.id !== room.id);
+          saveRooms(updated);
+          renderRoomsGrid();
+          applyFilters();
+        });
+      }
+
+      roomsGridContainer.appendChild(card);
+    });
+  };
+
+  // Open Room Modal: Add Mode
+  const openAddRoomModal = () => {
+    if (roomFormId) roomFormId.value = "";
+    if (roomFormName) roomFormName.value = "";
+    if (roomFormFloor) roomFormFloor.value = "";
+    if (roomFormCapacity) roomFormCapacity.value = "8";
+    if (roomFormStatus) roomFormStatus.value = "Active";
+    if (roomFormAmenities) roomFormAmenities.value = "Aircon, TV/Projector, Whiteboard";
+    if (roomModalTitle) roomModalTitle.textContent = "Add New Room";
+    if (roomModalSubtitle) roomModalSubtitle.textContent = "Enter details for the new meeting room.";
+    if (btnSaveRoom) btnSaveRoom.textContent = "Add room";
+    if (roomModalToast) roomModalToast.style.display = "none";
+
+    if (roomManageModal && typeof roomManageModal.showModal === "function") {
+      roomManageModal.showModal();
+    }
+  };
+
+  // Open Room Modal: Edit Mode
+  const openEditRoomModal = (room) => {
+    if (roomFormId) roomFormId.value = room.id;
+    if (roomFormName) roomFormName.value = room.name || "";
+    if (roomFormFloor) roomFormFloor.value = room.floor || "";
+    if (roomFormCapacity) roomFormCapacity.value = room.capacity || "8";
+    if (roomFormStatus) roomFormStatus.value = room.status || "Active";
+    if (roomFormAmenities) roomFormAmenities.value = Array.isArray(room.amenities) ? room.amenities.join(", ") : "";
+    if (roomModalTitle) roomModalTitle.textContent = `Edit Room`;
+    if (roomModalSubtitle) roomModalSubtitle.textContent = `Update settings for ${room.name}.`;
+    if (btnSaveRoom) btnSaveRoom.textContent = "Save changes";
+    if (roomModalToast) roomModalToast.style.display = "none";
+
+    if (roomManageModal && typeof roomManageModal.showModal === "function") {
+      roomManageModal.showModal();
+    }
+  };
+
+  if (btnOpenAddRoom) {
+    btnOpenAddRoom.addEventListener("click", openAddRoomModal);
+  }
+
+  // Save Room (Add or Edit)
+  if (btnSaveRoom) {
+    btnSaveRoom.addEventListener("click", () => {
+      const name = roomFormName ? roomFormName.value.trim() : "";
+      const floor = roomFormFloor ? roomFormFloor.value.trim() : "";
+      const capacity = roomFormCapacity ? parseInt(roomFormCapacity.value, 10) || 1 : 1;
+      const status = roomFormStatus ? roomFormStatus.value : "Active";
+      const rawAmenities = roomFormAmenities ? roomFormAmenities.value.trim() : "";
+
+      if (!name) {
+        showToastMsg(roomModalToast, "Please enter a room name.", true);
+        return;
+      }
+      if (!floor) {
+        showToastMsg(roomModalToast, "Please enter the floor location.", true);
+        return;
+      }
+
+      const amenities = rawAmenities
+        ? rawAmenities.split(",").map((a) => a.trim()).filter(Boolean)
+        : ["Aircon"];
+
+      const allRooms = getStoredRooms();
+      const existingId = roomFormId ? roomFormId.value : "";
+
+      if (existingId) {
+        // Edit existing room
+        const idx = allRooms.findIndex((r) => r.id === existingId);
+        if (idx !== -1) {
+          allRooms[idx] = {
+            ...allRooms[idx],
+            name,
+            floor,
+            capacity,
+            status,
+            amenities
+          };
+        }
+      } else {
+        // Add new room
+        const newRoom = {
+          id: `room-${Date.now()}`,
+          name,
+          floor,
+          capacity,
+          status,
+          amenities
+        };
+        allRooms.push(newRoom);
+      }
+
+      saveRooms(allRooms);
+      renderRoomsGrid();
+      applyFilters();
+
+      showToastMsg(roomModalToast, existingId ? "Room updated successfully!" : "Room added successfully!");
+      setTimeout(() => {
+        if (roomManageModal) roomManageModal.close();
+      }, 600);
+    });
+  }
+
+  // Room filters listeners
+  if (roomSearchFilter) {
+    roomSearchFilter.addEventListener("input", renderRoomsGrid);
+  }
+  if (roomFloorFilter) {
+    roomFloorFilter.addEventListener("change", renderRoomsGrid);
+  }
+  if (roomStatusFilter) {
+    roomStatusFilter.addEventListener("change", renderRoomsGrid);
+  }
+  if (roomResetFilter) {
+    roomResetFilter.addEventListener("click", () => {
+      if (roomSearchFilter) roomSearchFilter.value = "";
+      if (roomFloorFilter) roomFloorFilter.value = "";
+      if (roomStatusFilter) roomStatusFilter.value = "";
+      renderRoomsGrid();
+    });
+  }
+
+  /* =========================================
+     DATE & TIME HELPERS
+  ========================================= */
 
   const getTodayStr = () => {
     const d = new Date();
@@ -127,7 +562,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return isoDate;
   };
 
-  // Get stored modifications
+  /* =========================================
+     RESERVATIONS STORAGE & MODS
+  ========================================= */
+
   const getStoredModifications = () => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY_MODS) || "{}");
@@ -145,7 +583,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {}
   };
 
-  // Apply stored modifications to static rows
   const applySavedModificationsToStaticRows = () => {
     const mods = getStoredModifications();
     Object.keys(mods).forEach((id) => {
@@ -174,12 +611,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const cancelBtn = row.querySelector(".btn-cancel");
         if (cancelBtn) {
           cancelBtn.disabled = isCancelled;
+          if (isCancelled) cancelBtn.title = "Reservation is already cancelled";
         }
       }
     });
   };
 
-  // 1. OPEN VIEW DETAILS MODAL (View only)
+  /* =========================================
+     RESERVATIONS: 3 MODALS (VIEW, MODIFY, CANCEL)
+  ========================================= */
+
+  // 1. VIEW MODAL
   const openViewDetailsModal = (row) => {
     currentActiveRow = row;
     if (!currentActiveRow) return;
@@ -215,7 +657,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // 2. OPEN MODIFY MODAL (Modify details)
+  // 2. MODIFY MODAL
   const openModifyDetailsModal = (row) => {
     currentActiveRow = row;
     if (!currentActiveRow) return;
@@ -256,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // 3. OPEN CANCEL CONFIRMATION MODAL (Pop up confirmation)
+  // 3. CANCEL MODAL
   const openCancelConfirmModal = (row) => {
     currentActiveRow = row;
     if (!currentActiveRow) return;
@@ -272,14 +714,12 @@ document.addEventListener("DOMContentLoaded", () => {
       cancelModalSummary.innerHTML = `You are cancelling the reservation for <strong>${escHtml(title)}</strong> in <strong>${escHtml(room)}</strong>${date ? ` on <strong>${formatDateDisplay(date)}</strong>` : ""}.`;
     }
 
-    if (cancelModalToast) cancelModalToast.style.display = "none";
-
     if (cancelConfirmModal && typeof cancelConfirmModal.showModal === "function") {
       cancelConfirmModal.showModal();
     }
   };
 
-  // Wire up action buttons on a table row
+  // Wire up 3 icon buttons on a row
   const attachRowActionListeners = (row) => {
     const btnView = row.querySelector(".btn-view");
     const btnModify = row.querySelector(".btn-modify");
@@ -296,7 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Update storage for dynamic or static bookings
+  // Update storage for bookings
   const updateBookingInStorage = (bookingId, patch) => {
     let updatedInRafi = false;
     try {
@@ -338,11 +778,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const newInstructions = modifyInputInstructions ? modifyInputInstructions.value.trim() : "";
 
       if (!newTitle) {
-        showModifyToast("Please enter a meeting title.", true);
+        showToastMsg(modifyModalToast, "Please enter a meeting title.", true);
         return;
       }
 
-      // Update DOM row
       currentActiveRow.dataset.title = newTitle;
       currentActiveRow.dataset.pax = String(newPax);
       currentActiveRow.dataset.roomSetup = newSetup;
@@ -356,7 +795,6 @@ document.addEventListener("DOMContentLoaded", () => {
         currentActiveRow.children[4].textContent = String(newPax);
       }
 
-      // Update storage
       const bookingId = currentActiveRow.dataset.bookingId || "";
       updateBookingInStorage(bookingId, {
         meetingTitle: newTitle,
@@ -368,19 +806,18 @@ document.addEventListener("DOMContentLoaded", () => {
         additionalInstructions: newInstructions,
       });
 
-      showModifyToast("Changes saved successfully!");
+      showToastMsg(modifyModalToast, "Changes saved successfully!");
       setTimeout(() => {
         if (modifyDetailsModal) modifyDetailsModal.close();
       }, 600);
     });
   }
 
-  // Confirm cancellation from cancel modal
+  // Confirm cancellation
   if (btnConfirmCancellation) {
     btnConfirmCancellation.addEventListener("click", () => {
       if (!currentActiveRow) return;
 
-      // Update row status
       currentActiveRow.dataset.status = "cancelled";
       const pill = currentActiveRow.querySelector(".status-pill");
       if (pill) {
@@ -388,25 +825,25 @@ document.addEventListener("DOMContentLoaded", () => {
         pill.textContent = "Cancelled";
       }
 
-      // Disable cancel button on row
       const rowCancelBtn = currentActiveRow.querySelector(".btn-cancel");
       if (rowCancelBtn) {
         rowCancelBtn.disabled = true;
+        rowCancelBtn.title = "Reservation is already cancelled";
       }
 
-      // Update storage
       const bookingId = currentActiveRow.dataset.bookingId || "";
       updateBookingInStorage(bookingId, { status: "Cancelled" });
 
-      // Close modal
       if (cancelConfirmModal) cancelConfirmModal.close();
 
-      // Recalculate stats & filter
       applyFilters();
     });
   }
 
-  // Load newly booked reservations from storage
+  /* =========================================
+     LOAD STORED BOOKINGS (WITH 3 ICON BUTTONS)
+  ========================================= */
+
   const loadStoredBookings = () => {
     let stored = [];
     try {
@@ -441,6 +878,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const cancelBtn = existing.querySelector(".btn-cancel");
           if (cancelBtn) {
             cancelBtn.disabled = storedStatus === "cancelled";
+            if (storedStatus === "cancelled") cancelBtn.title = "Reservation is already cancelled";
           }
         }
         return;
@@ -509,9 +947,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Filter application & stats calculation
+  /* =========================================
+     RESERVATIONS: FILTER & STATS CALCULATION
+  ========================================= */
+
   const applyFilters = () => {
     loadStoredBookings();
+
+    const rooms = getStoredRooms();
+    const currentTotalRooms = rooms.length || TOTAL_ROOMS;
 
     const selectedDate = dateFilter ? dateFilter.value.trim() : "";
     const hasFilter = Boolean(selectedDate || (activePeriod && activePeriod !== "all"));
@@ -592,7 +1036,7 @@ document.addEventListener("DOMContentLoaded", () => {
         statOccupiedRooms.textContent = occupiedCount;
       }
       if (statFootOccupied) {
-        statFootOccupied.textContent = `${occupiedCount} of ${TOTAL_ROOMS} rooms`;
+        statFootOccupied.textContent = `${occupiedCount} of ${currentTotalRooms} rooms`;
       }
     } else {
       if (statTotalBookings) {
@@ -607,12 +1051,15 @@ document.addEventListener("DOMContentLoaded", () => {
         statOccupiedRooms.textContent = occupiedCount;
       }
       if (statFootOccupied) {
-        statFootOccupied.textContent = "of 8 rooms";
+        statFootOccupied.textContent = `of ${currentTotalRooms} rooms`;
       }
     }
   };
 
-  // Period chip handlers (All, Day, Week, Month)
+  /* =========================================
+     FILTER LISTENERS
+  ========================================= */
+
   periodChips.forEach((chip) => {
     chip.addEventListener("click", () => {
       periodChips.forEach((c) => c.classList.remove("active"));
@@ -628,7 +1075,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Date filter handler
   if (dateFilter) {
     const handleDateInput = () => {
       if (dateFilter.value) {
@@ -649,7 +1095,6 @@ document.addEventListener("DOMContentLoaded", () => {
     dateFilter.addEventListener("click", () => loadStoredBookings());
   }
 
-  // Clear filters
   const resetFilters = () => {
     if (dateFilter) dateFilter.value = "";
     activePeriod = "all";
@@ -668,16 +1113,20 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyResetButton.addEventListener("click", resetFilters);
   }
 
-  // Close modals
+  /* =========================================
+     MODAL CLOSE HANDLERS
+  ========================================= */
+
   closeModalButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       if (viewDetailsModal) viewDetailsModal.close();
       if (modifyDetailsModal) modifyDetailsModal.close();
       if (cancelConfirmModal) cancelConfirmModal.close();
+      if (roomManageModal) roomManageModal.close();
     });
   });
 
-  [viewDetailsModal, modifyDetailsModal, cancelConfirmModal].forEach((modal) => {
+  [viewDetailsModal, modifyDetailsModal, cancelConfirmModal, roomManageModal].forEach((modal) => {
     if (modal) {
       modal.addEventListener("click", (event) => {
         if (event.target === modal) {
@@ -687,16 +1136,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Attach action listeners to static rows
+  // Attach action listeners to initial static rows
   const staticRows = Array.from(document.querySelectorAll("#bookings-tbody tr:not(.no-bookings-row)"));
   staticRows.forEach((row) => attachRowActionListeners(row));
 
   // Sync across tabs & windows
   window.addEventListener("storage", (event) => {
-    if (event.key === STORAGE_KEY_BOOKINGS || event.key === STORAGE_KEY_MODS) {
+    if (event.key === STORAGE_KEY_BOOKINGS || event.key === STORAGE_KEY_MODS || event.key === STORAGE_KEY_ROOMS) {
       loadStoredBookings();
       applySavedModificationsToStaticRows();
       applyFilters();
+      renderRoomsGrid();
     }
   });
 
@@ -704,10 +1154,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loadStoredBookings();
     applySavedModificationsToStaticRows();
     applyFilters();
+    renderRoomsGrid();
   });
 
   // Initial load
   applySavedModificationsToStaticRows();
   loadStoredBookings();
   applyFilters();
+  renderRoomsGrid();
 });

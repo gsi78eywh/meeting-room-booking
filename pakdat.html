@@ -8,20 +8,44 @@
   </head>
   <body>
     <div class="page-shell">
-      <div class="topbar">
-        <div class="eyebrow">WORKPLACE ADMINISTRATION</div>
-      </div>
+      <header class="topbar-nav">
+        <div class="nav-brand">
+          <div class="nav-eyebrow">WORKPLACE ADMINISTRATION</div>
+          <div class="nav-app-name">Admin Portal</div>
+        </div>
+
+        <nav class="nav-tabs" role="tablist" aria-label="Admin Navigation">
+          <button type="button" class="nav-tab active" id="tab-reservations" role="tab" aria-selected="true" aria-controls="view-reservations">
+            <svg viewBox="0 0 24 24" class="nav-tab-icon" aria-hidden="true"><path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zm0 4h10M8 1.8v3m8-3v3M7 9.5h10"/></svg>
+            <span>Reservations</span>
+          </button>
+          <button type="button" class="nav-tab" id="tab-rooms" role="tab" aria-selected="false" aria-controls="view-rooms">
+            <svg viewBox="0 0 24 24" class="nav-tab-icon" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Manage Rooms</span>
+            <span class="tab-badge" id="tab-rooms-count">8</span>
+          </button>
+        </nav>
+
+        <div class="nav-actions">
+          <a href="bebetimeDOSMEL.html" class="nav-link-btn" title="Open employee booking interface">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>Booking Portal</span>
+          </a>
+        </div>
+      </header>
 
       <main class="main-content">
-        <div class="top-overview-section">
-          <div class="title-row">
-            <div>
-              <h1>Booking Overview</h1>
-              <p class="subtitle">
-                Monitor today's rooms and manage all reservations in one place.
-              </p>
+        <!-- 1. RESERVATIONS VIEW (Active by default) -->
+        <section id="view-reservations" class="admin-view active">
+          <div class="top-overview-section">
+            <div class="title-row">
+              <div>
+                <h1>Booking Overview</h1>
+                <p class="subtitle">
+                  Monitor today's rooms and manage all reservations in one place.
+                </p>
+              </div>
             </div>
-          </div>
 
           <div class="overview-filter-bar">
             <div class="date-time-filter-wrap">
@@ -299,8 +323,67 @@
             </table>
           </div>
         </section>
-      </main>
-    </div>
+      </section>
+
+      <!-- 2. ROOM MANAGEMENT VIEW -->
+      <section id="view-rooms" class="admin-view" style="display: none;">
+        <div class="top-overview-section">
+          <div class="title-row">
+            <div>
+              <h1>Meeting Rooms</h1>
+              <p class="subtitle">
+                Configure workplace meeting rooms, capacities, equipment, and live availability.
+              </p>
+            </div>
+            <button type="button" class="btn-add-room" id="btn-open-add-room" aria-label="Add new meeting room">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              <span>Add Room</span>
+            </button>
+          </div>
+
+          <div class="overview-filter-bar">
+            <div class="rooms-filter-wrap">
+              <label class="overview-filter-field rooms-search-field" for="room-search-filter">
+                <span>Search rooms</span>
+                <input id="room-search-filter" type="text" placeholder="Search by name, floor, or amenities..." />
+              </label>
+
+              <label class="overview-filter-field" for="room-floor-filter">
+                <span>Filter by floor</span>
+                <select id="room-floor-filter">
+                  <option value="">All Floors</option>
+                  <option value="2nd Floor">2nd Floor</option>
+                  <option value="3rd Floor">3rd Floor</option>
+                  <option value="4th Floor">4th Floor</option>
+                  <option value="5th Floor">5th Floor</option>
+                  <option value="6th Floor">6th Floor</option>
+                  <option value="Roof Deck">Roof Deck</option>
+                  <option value="Ground Floor">Ground Floor</option>
+                </select>
+              </label>
+
+              <label class="overview-filter-field" for="room-status-filter">
+                <span>Status</span>
+                <select id="room-status-filter">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </label>
+
+              <button id="room-reset-filter" class="btn-clear-overview" type="button" disabled>
+                Clear filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rooms-grid" id="rooms-grid-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+    </main>
+  </div>
 
     <!-- 1. VIEW DETAILS MODAL (Viewing only) -->
     <dialog class="booking-modal" id="view-details-modal" aria-labelledby="view-modal-title">
@@ -454,6 +537,61 @@
         <button type="button" class="btn-modal-ghost modal-close">Keep reservation</button>
         <button type="button" class="btn-cancel-confirm" id="btn-confirm-cancellation">Yes, cancel reservation</button>
       </div>
+    </dialog>
+
+    <!-- 4. ROOM MANAGEMENT MODAL (Add & Edit Room) -->
+    <dialog class="booking-modal room-dialog" id="room-manage-modal" aria-labelledby="room-modal-title">
+      <header class="modal-heading">
+        <span class="confirmation-icon icon-modify" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </span>
+        <h2 id="room-modal-title">Add Room</h2>
+        <p class="modal-subtitle-text" id="room-modal-subtitle">Enter details for this meeting room.</p>
+      </header>
+
+      <form id="room-manage-form" class="modal-edit-form" onsubmit="return false;">
+        <input type="hidden" id="room-form-id" value="" />
+
+        <div class="modal-field-group">
+          <label for="room-form-name">Room name</label>
+          <input type="text" id="room-form-name" class="modal-input" placeholder="e.g. Executive Boardroom" required />
+        </div>
+
+        <div class="modal-field-row">
+          <div class="modal-field-group">
+            <label for="room-form-floor">Floor location</label>
+            <input type="text" id="room-form-floor" class="modal-input" placeholder="e.g. 3rd Floor" required />
+          </div>
+
+          <div class="modal-field-group">
+            <label for="room-form-capacity">Capacity (pax)</label>
+            <input type="number" id="room-form-capacity" class="modal-input" min="1" max="100" placeholder="e.g. 10" required />
+          </div>
+        </div>
+
+        <div class="modal-field-group">
+          <label for="room-form-status">Availability status</label>
+          <select id="room-form-status" class="modal-select">
+            <option value="Active">Active (Available for booking)</option>
+            <option value="Maintenance">Under Maintenance (Unavailable)</option>
+          </select>
+        </div>
+
+        <div class="modal-field-group">
+          <label for="room-form-amenities">Amenities &amp; Equipment (comma-separated)</label>
+          <input type="text" id="room-form-amenities" class="modal-input" placeholder="e.g. Aircon, TV/Projector, Whiteboard" />
+        </div>
+
+        <div id="room-modal-toast" class="modal-toast" style="display: none;"></div>
+
+        <div class="modal-actions-bar">
+          <div></div>
+          <div class="modal-right-actions">
+            <button type="button" class="btn-modal-ghost modal-close">Cancel</button>
+            <button type="button" class="btn-modal-save" id="btn-save-room">Save room</button>
+          </div>
+        </div>
+      </form>
     </dialog>
 
     <script src="villadolid.js"></script>
