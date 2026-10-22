@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booking Overview</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="topbar">
+        <div class="eyebrow">WORKPLACE ADMINISTRATION</div>
+      </div>
+
+      <main class="main-content">
+        <div class="title-row">
+          <div>
+            <h1>Booking Overview</h1>
+            <p class="subtitle">
+              Monitor today's rooms and manage all reservations in one place.
+            </p>
+          </div>
+
+        </div>
+
+        <section class="stats-grid" aria-label="Booking stats">
+          <article class="stat-card">
+            <div class="stat-icon icon-booking" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zm0 4h10M8 1.8v3m8-3v3M7 9.5h10"/></svg>
+            </div>
+            <div class="stat-copy">
+              <div class="stat-label">Total bookings</div>
+              <div class="stat-value" id="stat-total-bookings">5</div>
+            </div>
+            <div class="stat-foot">All scheduled</div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon icon-occupied" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 18.5V7.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11m-14 0h14M8 10.5h8M8 14.5h6"/></svg>
+            </div>
+            <div class="stat-copy">
+              <div class="stat-label">Rooms occupied</div>
+              <div class="stat-value">3</div>
+            </div>
+            <div class="stat-foot">of 8 rooms</div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon icon-available" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zm0 4h10M8 1.8v3m8-3v3M7 9.5h10"/></svg>
+            </div>
+            <div class="stat-copy">
+              <div class="stat-label">Available rooms</div>
+              <div class="stat-value">5</div>
+            </div>
+            <div class="stat-foot">Right now</div>
+          </article>
+
+        </section>
+
+        <section class="booking-panel" aria-label="Booking list">
+          <div class="panel-header">
+            <div class="panel-heading-wrap">
+              <h2>Booking List</h2>
+              <p class="panel-subtitle">All employee room reservations &bull; <span id="booking-count">Showing 5 of 5 bookings</span></p>
+            </div>
+
+            <div class="quick-chips" role="group" aria-label="Quick date views">
+              <span class="chips-label">View:</span>
+              <button type="button" class="chip active" data-period="all">All</button>
+              <button type="button" class="chip" data-period="today">Today</button>
+              <button type="button" class="chip" data-period="week">This week</button>
+              <button type="button" class="chip" data-period="month">This month</button>
+            </div>
+          </div>
+
+          <div class="panel-filter-bar">
+            <div class="filters-grid">
+              <div class="filter-field filter-field-search">
+                <label for="booking-search-filter">Search</label>
+                <div class="search-input-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                  <input id="booking-search-filter" type="search" placeholder="Search employee, title..." aria-label="Search bookings by employee or title" />
+                </div>
+              </div>
+
+              <div class="filter-field">
+                <label for="booking-room-filter">Room</label>
+                <select id="booking-room-filter" aria-label="Filter bookings by room">
+                  <option value="">All rooms</option>
+                  <option value="Collaboration Hub">Collaboration Hub</option>
+                  <option value="Meeting Room A">Meeting Room A</option>
+                  <option value="Boardroom">Boardroom</option>
+                  <option value="Focus Room">Focus Room</option>
+                  <option value="3rd Floor Meeting Room">3rd Floor Meeting Room</option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="booking-status-filter">Status</label>
+                <select id="booking-status-filter" aria-label="Filter bookings by status">
+                  <option value="">All statuses</option>
+                  <option value="booked">Booked</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div class="filter-field filter-field-date">
+                <div class="filter-label-row">
+                  <label for="booking-date-filter" id="date-input-label">Date</label>
+                  <div class="date-toggle-group" role="radiogroup" aria-label="Date mode">
+                    <button type="button" class="date-toggle-btn active" id="toggle-day-btn" title="Filter by single day">Day</button>
+                    <button type="button" class="date-toggle-btn" id="toggle-month-btn" title="Filter by entire month">Month</button>
+                  </div>
+                </div>
+                <input id="booking-date-filter" type="date" aria-label="Filter bookings by date" />
+                <input id="booking-month-filter" type="month" aria-label="Filter bookings by month" style="display: none;" />
+              </div>
+
+              <div class="filter-field">
+                <label for="booking-time-filter">Time</label>
+                <select id="booking-time-filter" aria-label="Filter bookings by time">
+                  <option value="">All times</option>
+                  <optgroup label="Time of Day">
+                    <option value="morning">Morning (Before 12:00 PM)</option>
+                    <option value="afternoon">Afternoon (12:00 PM - 5:00 PM)</option>
+                  </optgroup>
+                  <optgroup label="Meeting Slots">
+                    <option value="8:00 AM - 9:00 AM">8:00 AM - 9:00 AM</option>
+                    <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+                    <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                    <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                    <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+                    <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+                    <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+                    <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="filter-field filter-field-clear">
+                <span class="clear-placeholder" aria-hidden="true">&nbsp;</span>
+                <button id="booking-reset-filter" class="btn-clear-ghost" type="button" disabled aria-label="Clear all filters">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="clear-icon"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Meeting title</th>
+                  <th>Room</th>
+                  <th>Date</th>
+                  <th>Participants</th>
+                  <th>Status</th>
+                  <th>Request details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  data-booking-date="2026-10-05"
+                  data-booking-month="2026-10"
+                  data-booking-time="9:00 AM - 10:00 AM"
+                  data-booking-start="09:00"
+                  data-booking-end="10:00"
+                  data-room="Collaboration Hub"
+                  data-status="booked"
+                  data-employee="Maya Chen"
+                  data-title="Budget Planning"
+                >
+                  <td class="person-cell">
+                    <span class="avatar avatar-mc">MC</span>
+                    <span>Maya Chen</span>
+                  </td>
+                  <td>Budget Planning</td>
+                  <td class="room-cell">Collaboration Hub<br /><span>2nd Floor</span></td>
+                  <td class="date-cell">October 5, 2026<br /><span>9:00 AM - 10:00 AM</span></td>
+                  <td>6</td>
+                  <td><span class="status-pill status-booked">Booked</span></td>
+                  <td><button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button></td>
+                </tr>
+
+                <tr
+                  data-booking-date="2026-10-07"
+                  data-booking-month="2026-10"
+                  data-booking-time="8:00 AM - 9:00 AM"
+                  data-booking-start="08:00"
+                  data-booking-end="09:00"
+                  data-room="Meeting Room A"
+                  data-status="booked"
+                  data-employee="Jordan Lee"
+                  data-title="System Design Review"
+                >
+                  <td class="person-cell">
+                    <span class="avatar avatar-jl">JL</span>
+                    <span>Jordan Lee</span>
+                  </td>
+                  <td>System Design Review</td>
+                  <td class="room-cell">Meeting Room A<br /><span>3rd Floor</span></td>
+                  <td class="date-cell">October 7, 2026<br /><span>8:00 AM - 9:00 AM</span></td>
+                  <td>4</td>
+                  <td><span class="status-pill status-upcoming">Booked</span></td>
+                  <td><button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button></td>
+                </tr>
+
+                <tr
+                  data-booking-date="2026-10-12"
+                  data-booking-month="2026-10"
+                  data-booking-time="9:00 AM - 10:00 AM"
+                  data-booking-start="09:00"
+                  data-booking-end="10:00"
+                  data-room="Boardroom"
+                  data-status="cancelled"
+                  data-employee="Alex Rivera"
+                  data-title="Product Planning Meeting"
+                >
+                  <td class="person-cell">
+                    <span class="avatar avatar-ar">AR</span>
+                    <span>Alex Rivera</span>
+                  </td>
+                  <td>Product Planning Meeting</td>
+                  <td class="room-cell">Boardroom<br /><span>4th Floor</span></td>
+                  <td class="date-cell">October 12, 2026<br /><span>9:00 AM - 10:00 AM</span></td>
+                  <td>9</td>
+                  <td><span class="status-pill status-cancelled">Cancelled</span></td>
+                  <td><button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button></td>
+                </tr>
+
+                <tr
+                  data-booking-date="2026-10-12"
+                  data-booking-month="2026-10"
+                  data-booking-time="9:00 AM - 10:00 AM"
+                  data-booking-start="09:00"
+                  data-booking-end="10:00"
+                  data-room="Focus Room"
+                  data-status="booked"
+                  data-employee="Sam Wilson"
+                  data-title="Team Standup"
+                >
+                  <td class="person-cell">
+                    <span class="avatar avatar-sw">SW</span>
+                    <span>Sam Wilson</span>
+                  </td>
+                  <td>Team Standup</td>
+                  <td class="room-cell">Focus Room<br /><span>3rd Floor</span></td>
+                  <td class="date-cell">October 12, 2026<br /><span>9:00 AM - 10:00 AM</span></td>
+                  <td>3</td>
+                  <td><span class="status-pill status-upcoming">Booked</span></td>
+                  <td><button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button></td>
+                </tr>
+
+                <tr
+                  data-booking-date="2026-10-17"
+                  data-booking-month="2026-10"
+                  data-booking-time="10:00 AM - 11:00 AM"
+                  data-booking-start="10:00"
+                  data-booking-end="11:00"
+                  data-room="3rd Floor Meeting Room"
+                  data-status="booked"
+                  data-employee="User submission"
+                  data-title="Team Collaboration"
+                  data-room-setup="Not Applicable"
+                  data-additional-instructions="mag pa on me sa aircon"
+                  data-food-coffee="need coffee and food"
+                >
+                  <td class="person-cell">
+                    <span class="avatar avatar-user">US</span>
+                    <span>User submission</span>
+                  </td>
+                  <td>Team Collaboration</td>
+                  <td class="room-cell">3rd Floor Meeting Room<br /><span>8 seats</span></td>
+                  <td class="date-cell">October 17, 2026<br /><span>10:00 AM - 11:00 AM</span></td>
+                  <td>5</td>
+                  <td><span class="status-pill status-booked">Booked</span></td>
+                  <td>
+                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  </td>
+                </tr>
+
+                <tr id="no-bookings-row" class="no-bookings-row" style="display: none;">
+                  <td colspan="7">
+                    <div class="empty-state">
+                      <div class="empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                      </div>
+                      <p class="empty-title">No bookings match your filters</p>
+                      <p class="empty-desc">Try clearing your filters or selecting another date, room, or time.</p>
+                      <button class="empty-clear-link" id="empty-reset-btn" type="button">Clear filters</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="booking-modal" id="booking-modal" aria-labelledby="booking-modal-title">
+      <header class="modal-heading">
+        <span class="confirmation-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12.5 4.5 4.5L19 6" /></svg>
+        </span>
+        <h2 id="booking-modal-title">Booking Details</h2>
+        <p>Here are the details of your meeting room reservation.</p>
+      </header>
+      <dl class="booking-summary">
+        <div><dt>Room Setup</dt><dd id="detail-room-setup">Not Applicable</dd></div>
+        <div><dt>Additional instructions</dt><dd id="detail-instructions"></dd></div>
+        <div><dt>Food/coffee preparation</dt><dd id="detail-food-coffee"></dd></div>
+      </dl>
+      <div class="modal-actions">
+        <button class="modal-close" type="button">Close</button>
+      </div>
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>

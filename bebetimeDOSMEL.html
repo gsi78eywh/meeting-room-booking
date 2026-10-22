@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>RAFI Meeting Room Booking</title>
+
+  <link rel="stylesheet" href="design.css" />
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img class="logo" src="RAFI.png/RAFI_LOGO-removebg-preview.png" alt="Ramon Aboitiz Foundation Inc. logo" />
+      </div>
+      <nav class="nav" aria-label="Main navigation">
+        <button id="navBook" class="active" type="button">▣ &nbsp; Book a Room</button>
+        <button id="navHistory" type="button">▤ &nbsp; My Bookings</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="small-user sidebar-user">
+          <div class="small-avatar">AR</div>
+          <div><strong>Anna Rhea</strong><span>Employee</span></div>
+        </div>
+        <button type="button">↪ &nbsp; Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="brand-kicker">RAFI / MEETING ROOMS</p>
+          <h1 id="pageHeading">Meeting Room Booking</h1>
+          <p id="pageSub">Find and reserve a meeting room quickly and easily.</p>
+        </div>
+      </header>
+
+      <section id="bookingPage" class="layout">
+        <section class="card booking-card">
+          <div class="section">
+            <div class="section-head"><div class="num">1</div><div><h2>Meeting Details</h2><p>Choose a meeting date and add a title.</p></div></div>
+            <div class="meeting-fields">
+              <div>
+                <label class="meeting-title-field" for="date">Meeting Date</label>
+                <input id="date" class="date-input" type="date" />
+              </div>
+              <div>
+                <label class="meeting-title-field" for="meetingTitle">Meeting Title</label>
+                <input id="meetingTitle" class="date-input" type="text" maxlength="100" placeholder="Enter a title for your meeting" />
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><div class="num">2</div><div><h2>Room Capacity</h2><p>Filter rooms by exact capacity.</p></div></div>
+            <select id="participants" class="date-input">
+              <option value="">Select a room capacity</option>
+              <option value="4">4</option><option value="8">8</option><option value="10">10</option>
+              <option value="12">12</option><option value="14">14</option><option value="25">25</option><option value="35">35</option>
+            </select>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><div class="num">3</div><div><h2>Meeting Time & Available Rooms</h2><p>Select a time range and review room bookings for the meeting date.</p></div></div>
+            <div class="room-calendar-heading"><h3>Available Rooms</h3><p id="roomHelp">Select a room capacity to show matching rooms.</p></div>
+            <div id="roomList" class="room-list" aria-live="polite"></div>
+            <div class="time-range-picker">
+              <div class="time-range-field">
+                <label class="meeting-title-field" for="startTime">Start Time</label>
+                <select id="startTime" class="date-input">
+                  <option value="">Select a room first</option>
+                </select>
+              </div>
+              <div class="time-range-field">
+                <label class="meeting-title-field" for="endTime">End Time</label>
+                <select id="endTime" class="date-input">
+                  <option value="">Select start time first</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><div class="num">4</div><div><h2>Room Setup and Preparation</h2><p>Share any setup or preparation requests.</p></div></div>
+            <label class="meeting-title-field" for="roomSetup">Room Setup <span>(Required)</span></label>
+            <select id="roomSetup" class="date-input">
+              <option value="">Select an option</option>
+              <option>Not Applicable</option><option>Classroom type without table</option>
+              <option>Classroom type with table</option><option>O-shape (chairs only)</option><option>U-shape</option>
+            </select>
+            <label class="meeting-title-field" for="additionalInstructions">Additional instructions <span>(Optional)</span></label>
+            <textarea id="additionalInstructions" class="form-textarea" maxlength="1000" placeholder="Add any additional instructions"></textarea>
+            <label class="meeting-title-field" for="foodPreparation">Food/coffee preparation <span>(Optional)</span></label>
+            <textarea id="foodPreparation" class="form-textarea" maxlength="1000" placeholder="Describe any food or coffee preparation needed"></textarea>
+          </div>
+
+          <div class="action"><button id="bookButton" class="book-btn" type="button">Book Now</button></div>
+        </section>
+
+        <aside class="card summary">
+          <div class="summary-head">
+            <h2>Booking Summary</h2>
+            <p>Review your booking details.</p>
+            <div class="progress-copy"><span>Required details</span><strong id="progressCount">0 of 8</strong></div>
+            <div class="progress-track" role="progressbar" aria-label="Required booking details completed" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"><span id="progressBar"></span></div>
+          </div>
+          <div class="summary-body">
+            <div class="sum-row" data-summary="date"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Date</span><strong>Not selected</strong></div></div>
+            <div class="sum-row meeting-title-summary" data-summary="meetingTitle"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Title</span><strong>Not selected</strong></div></div>
+            <div class="sum-row" data-summary="participants"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Room Capacity Filter</span><strong>Not selected</strong></div></div>
+            <div class="sum-row" data-summary="room"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Room</span><strong>Not selected</strong></div></div>
+            <div class="sum-row" data-summary="meetingTime"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Time</span><strong>Not selected</strong></div></div>
+            <div class="sum-row roomSetup-summary" data-summary="roomSetup"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Room Setup</span><strong>Not selected</strong></div></div>
+            <div class="sum-row additionalInstructions-summary" data-summary="additionalInstructions"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Additional instructions</span><strong>Not provided</strong></div></div>
+            <div class="sum-row foodPreparation-summary" data-summary="foodPreparation"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Food/coffee preparation</span><strong>Not provided</strong></div></div>
+            <div class="divider"></div>
+            <div class="status"><span>Status</span><div id="statusBadge" class="status-badge">Draft</div></div>
+          </div>
+          <div class="summary-foot">The system will perform a final availability check before confirming your reservation.</div>
+        </aside>
+      </section>
+
+      <section id="historyPage" hidden>
+        <div class="history-toolbar">
+          <button id="newBookingButton" class="history-book-btn" type="button">+ Book a Meeting Room</button>
+          <label class="history-date-field"><span>Filter by date</span><input id="historyDate" class="history-date" type="date" aria-label="Filter bookings by date" /></label>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal"></div>
+  <div id="toast" class="toast"></div>
+  <script src="functions.js"></script>
+
+</body>
+</html>
+
+
