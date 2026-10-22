@@ -456,20 +456,69 @@ tbody tr:last-child td {
   color: #705313;
 }
 
-.booking-details-button {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 9px 12px;
-  background: var(--panel-bg);
-  color: var(--blue-strong);
-  font-weight: 600;
+.action-cell {
   white-space: nowrap;
-  transition: all 0.15s ease;
 }
 
-.booking-details-button:hover {
+.action-buttons-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 11px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.25;
+}
+
+.btn-action.btn-view {
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  color: var(--blue-strong);
+}
+
+.btn-action.btn-view:hover {
   background: var(--panel-alt);
   border-color: var(--steel-blue);
+  color: var(--heading-deep);
+}
+
+.btn-action.btn-modify {
+  background: #f0f6fa;
+  border: 1px solid var(--steel-blue);
+  color: var(--blue-strong);
+}
+
+.btn-action.btn-modify:hover {
+  background: var(--ice-blue);
+  color: var(--heading-deep);
+}
+
+.btn-action.btn-cancel {
+  background: #fff5f5;
+  border: 1px solid #f2b4b4;
+  color: #b3261e;
+}
+
+.btn-action.btn-cancel:hover:not(:disabled) {
+  background: #ffe3e3;
+  border-color: #e57373;
+}
+
+.btn-action.btn-cancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f7f7f7;
+  border-color: #e5e5e5;
+  color: #999;
 }
 
 .no-bookings-row td {
@@ -770,6 +819,113 @@ tbody tr:last-child td {
 
 .btn-modal-save:hover {
   background: #e8a80d;
+}
+
+/* View Details Card */
+.view-details-card {
+  display: grid;
+  margin: 0 0 20px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--panel-alt);
+  border: 1px solid var(--line);
+}
+
+.view-item {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(0, 1.3fr);
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.view-item:last-child {
+  border-bottom: none;
+}
+
+.view-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.view-value {
+  margin: 0;
+  color: var(--heading-deep);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: right;
+  word-break: break-word;
+}
+
+.modal-actions-bar.single-action {
+  justify-content: flex-end;
+}
+
+/* Cancel Dialog */
+.cancel-dialog {
+  width: min(500px, calc(100vw - 32px));
+}
+
+.confirmation-icon.icon-danger {
+  background: #ffebe8;
+}
+
+.confirmation-icon.icon-danger svg {
+  stroke: #b3261e;
+}
+
+.confirmation-icon.icon-modify {
+  background: #e8f3fa;
+}
+
+.confirmation-icon.icon-modify svg {
+  stroke: var(--blue-strong);
+}
+
+.cancel-notice-box {
+  background: #fff8f8;
+  border: 1px solid #f9d8d8;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.cancel-notice-box p {
+  margin: 0;
+  color: var(--heading-deep);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.cancel-notice-box .cancel-subtext {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.modal-actions-bar.cancel-actions-bar {
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel-confirm {
+  border: none;
+  background: #b3261e;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel-confirm:hover {
+  background: #901f18;
 }
 
 @media (max-width: 980px) {

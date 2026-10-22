@@ -9,28 +9,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const emptyResetButton = document.querySelector("#empty-reset-btn");
   const bookingCount = document.querySelector("#booking-count");
 
-  // Stat elements (Total bookings & Rooms occupied)
+  // Stat elements
   const statTotalBookings = document.querySelector("#stat-total-bookings");
   const statOccupiedRooms = document.querySelector("#stat-occupied-rooms");
   const statFootBookings = document.querySelector("#stat-foot-bookings");
   const statFootOccupied = document.querySelector("#stat-foot-occupied");
 
-  // Modal elements
-  const bookingModal = document.querySelector("#booking-modal");
-  const closeModalButtons = Array.from(document.querySelectorAll(".modal-close"));
-  const modalEmployee = document.querySelector("#modal-employee");
-  const modalRoom = document.querySelector("#modal-room");
-  const modalDatetime = document.querySelector("#modal-datetime");
-  const modalStatusPill = document.querySelector("#modal-status-pill");
+  // 1. View Details Modal elements
+  const viewDetailsModal = document.querySelector("#view-details-modal");
+  const viewStatusPill = document.querySelector("#view-status-pill");
+  const viewEmployee = document.querySelector("#view-employee");
+  const viewTitle = document.querySelector("#view-title");
+  const viewRoom = document.querySelector("#view-room");
+  const viewDatetime = document.querySelector("#view-datetime");
+  const viewPax = document.querySelector("#view-pax");
+  const viewSetup = document.querySelector("#view-setup");
+  const viewFood = document.querySelector("#view-food");
+  const viewInstructions = document.querySelector("#view-instructions");
 
-  const editModalTitle = document.querySelector("#edit-modal-title");
-  const editModalPax = document.querySelector("#edit-modal-pax");
-  const editModalSetup = document.querySelector("#edit-modal-setup");
-  const editModalFood = document.querySelector("#edit-modal-food");
-  const editModalInstructions = document.querySelector("#edit-modal-instructions");
-  const modalToast = document.querySelector("#modal-toast");
-  const btnModalCancel = document.querySelector("#btn-modal-cancel");
-  const btnModalSave = document.querySelector("#btn-modal-save");
+  // 2. Modify Modal elements
+  const modifyDetailsModal = document.querySelector("#modify-details-modal");
+  const modifyEmployee = document.querySelector("#modify-employee");
+  const modifyRoom = document.querySelector("#modify-room");
+  const modifyDatetime = document.querySelector("#modify-datetime");
+  const modifyStatusPill = document.querySelector("#modify-status-pill");
+  const modifyInputTitle = document.querySelector("#modify-input-title");
+  const modifyInputPax = document.querySelector("#modify-input-pax");
+  const modifyInputSetup = document.querySelector("#modify-input-setup");
+  const modifyInputFood = document.querySelector("#modify-input-food");
+  const modifyInputInstructions = document.querySelector("#modify-input-instructions");
+  const modifyModalToast = document.querySelector("#modify-modal-toast");
+  const btnSaveModification = document.querySelector("#btn-save-modification");
+
+  // 3. Cancel Confirmation Modal elements
+  const cancelConfirmModal = document.querySelector("#cancel-confirm-modal");
+  const cancelModalSummary = document.querySelector("#cancel-modal-summary");
+  const cancelModalToast = document.querySelector("#cancel-modal-toast");
+  const btnConfirmCancellation = document.querySelector("#btn-confirm-cancellation");
+
+  const closeModalButtons = Array.from(document.querySelectorAll(".modal-close"));
 
   let currentActiveRow = null;
   let activePeriod = "all"; // "all" | "day" | "week" | "month" | "custom"
@@ -48,14 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   };
 
-  const showToast = (message, isError = false) => {
-    if (!modalToast) return;
-    modalToast.textContent = message;
-    modalToast.className = `modal-toast ${isError ? "error" : ""}`;
-    modalToast.style.display = "block";
+  const showModifyToast = (message, isError = false) => {
+    if (!modifyModalToast) return;
+    modifyModalToast.textContent = message;
+    modifyModalToast.className = `modal-toast ${isError ? "error" : ""}`;
+    modifyModalToast.style.display = "block";
     setTimeout(() => {
-      modalToast.style.display = "none";
-    }, 3200);
+      modifyModalToast.style.display = "none";
+    }, 2800);
   };
 
   const getTodayStr = () => {
@@ -110,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return isoDate;
   };
 
-  // Persisted hardcoded row modifications (edits/cancellations)
+  // Get stored modifications
   const getStoredModifications = () => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY_MODS) || "{}");
@@ -128,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {}
   };
 
-  // Apply saved modifications to static rows on initial load
+  // Apply stored modifications to static rows
   const applySavedModificationsToStaticRows = () => {
     const mods = getStoredModifications();
     Object.keys(mods).forEach((id) => {
@@ -147,23 +164,59 @@ document.addEventListener("DOMContentLoaded", () => {
       if (mod.additionalInstructions) row.dataset.additionalInstructions = mod.additionalInstructions;
       if (mod.foodCoffee) row.dataset.foodCoffee = mod.foodCoffee;
       if (mod.status) {
-        row.dataset.status = mod.status.toLowerCase();
+        const isCancelled = mod.status.toLowerCase() === "cancelled";
+        row.dataset.status = isCancelled ? "cancelled" : "booked";
         const pill = row.querySelector(".status-pill");
         if (pill) {
-          if (mod.status.toLowerCase() === "cancelled") {
-            pill.className = "status-pill status-cancelled";
-            pill.textContent = "Cancelled";
-          } else {
-            pill.className = "status-pill status-booked";
-            pill.textContent = "Booked";
-          }
+          pill.className = `status-pill ${isCancelled ? "status-cancelled" : "status-booked"}`;
+          pill.textContent = isCancelled ? "Cancelled" : "Booked";
+        }
+        const cancelBtn = row.querySelector(".btn-cancel");
+        if (cancelBtn) {
+          cancelBtn.disabled = isCancelled;
         }
       }
     });
   };
 
-  // Modal open & population
-  const openBookingModal = (row) => {
+  // 1. OPEN VIEW DETAILS MODAL (View only)
+  const openViewDetailsModal = (row) => {
+    currentActiveRow = row;
+    if (!currentActiveRow) return;
+
+    const employee = row.dataset.employee || row.querySelector(".person-cell span:not(.avatar)")?.textContent?.trim() || "User submission";
+    const title = row.dataset.title || row.children[1]?.textContent?.trim() || "—";
+    const room = row.dataset.room || "Room";
+    const floor = row.querySelector(".room-cell span")?.textContent?.trim() || "";
+    const date = row.dataset.bookingDate || "";
+    const time = row.dataset.bookingTime || row.querySelector(".date-cell span")?.textContent?.trim() || "";
+    const pax = row.dataset.pax || row.children[4]?.textContent?.trim() || "1";
+    const status = (row.dataset.status || row.querySelector(".status-pill")?.textContent || "booked").trim().toLowerCase();
+    const isCancelled = status === "cancelled";
+    const roomSetup = row.dataset.roomSetup || "Not Applicable";
+    const food = row.dataset.foodCoffee || "None provided";
+    const instructions = row.dataset.additionalInstructions || "None provided";
+
+    if (viewStatusPill) {
+      viewStatusPill.className = `status-pill ${isCancelled ? "status-cancelled" : "status-booked"}`;
+      viewStatusPill.textContent = isCancelled ? "Cancelled" : "Booked";
+    }
+    if (viewEmployee) viewEmployee.textContent = employee;
+    if (viewTitle) viewTitle.textContent = title;
+    if (viewRoom) viewRoom.textContent = floor ? `${room} (${floor})` : room;
+    if (viewDatetime) viewDatetime.textContent = `${formatDateDisplay(date)} • ${time}`;
+    if (viewPax) viewPax.textContent = pax;
+    if (viewSetup) viewSetup.textContent = roomSetup;
+    if (viewFood) viewFood.textContent = food;
+    if (viewInstructions) viewInstructions.textContent = instructions;
+
+    if (viewDetailsModal && typeof viewDetailsModal.showModal === "function") {
+      viewDetailsModal.showModal();
+    }
+  };
+
+  // 2. OPEN MODIFY MODAL (Modify details)
+  const openModifyDetailsModal = (row) => {
     currentActiveRow = row;
     if (!currentActiveRow) return;
 
@@ -175,153 +228,76 @@ document.addEventListener("DOMContentLoaded", () => {
     const time = row.dataset.bookingTime || row.querySelector(".date-cell span")?.textContent?.trim() || "";
     const pax = row.dataset.pax || row.children[4]?.textContent?.trim() || "1";
     const status = (row.dataset.status || row.querySelector(".status-pill")?.textContent || "booked").trim().toLowerCase();
-    const roomSetup = row.dataset.roomSetup || "Not Applicable";
-    const instructions = row.dataset.additionalInstructions || "";
-    const food = row.dataset.foodCoffee || "";
-
-    // Fill overview card
-    if (modalEmployee) modalEmployee.textContent = employee;
-    if (modalRoom) modalRoom.textContent = floor ? `${room} (${floor})` : room;
-    if (modalDatetime) modalDatetime.textContent = `${formatDateDisplay(date)} • ${time}`;
-
     const isCancelled = status === "cancelled";
-    if (modalStatusPill) {
-      modalStatusPill.className = `status-pill ${isCancelled ? "status-cancelled" : "status-booked"}`;
-      modalStatusPill.textContent = isCancelled ? "Cancelled" : "Booked";
+    const roomSetup = row.dataset.roomSetup || "Not Applicable";
+    const food = row.dataset.foodCoffee || "";
+    const instructions = row.dataset.additionalInstructions || "";
+
+    if (modifyEmployee) modifyEmployee.textContent = employee;
+    if (modifyRoom) modifyRoom.textContent = floor ? `${room} (${floor})` : room;
+    if (modifyDatetime) modifyDatetime.textContent = `${formatDateDisplay(date)} • ${time}`;
+    if (modifyStatusPill) {
+      modifyStatusPill.className = `status-pill ${isCancelled ? "status-cancelled" : "status-booked"}`;
+      modifyStatusPill.textContent = isCancelled ? "Cancelled" : "Booked";
     }
 
-    // Fill editable fields
-    if (editModalTitle) editModalTitle.value = title;
-    if (editModalPax) editModalPax.value = pax;
-    if (editModalSetup) {
-      editModalSetup.value = roomSetup;
-      if (!editModalSetup.value) {
-        editModalSetup.value = "Not Applicable";
-      }
+    if (modifyInputTitle) modifyInputTitle.value = title;
+    if (modifyInputPax) modifyInputPax.value = pax;
+    if (modifyInputSetup) {
+      modifyInputSetup.value = roomSetup;
+      if (!modifyInputSetup.value) modifyInputSetup.value = "Not Applicable";
     }
-    if (editModalFood) editModalFood.value = food;
-    if (editModalInstructions) editModalInstructions.value = instructions;
+    if (modifyInputFood) modifyInputFood.value = food;
+    if (modifyInputInstructions) modifyInputInstructions.value = instructions;
+    if (modifyModalToast) modifyModalToast.style.display = "none";
 
-    // Cancel button state
-    if (btnModalCancel) {
-      if (isCancelled) {
-        btnModalCancel.disabled = true;
-        btnModalCancel.textContent = "Booking cancelled";
-      } else {
-        btnModalCancel.disabled = false;
-        btnModalCancel.textContent = "Cancel booking";
-      }
-    }
-
-    if (modalToast) modalToast.style.display = "none";
-
-    if (bookingModal && typeof bookingModal.showModal === "function") {
-      bookingModal.showModal();
+    if (modifyDetailsModal && typeof modifyDetailsModal.showModal === "function") {
+      modifyDetailsModal.showModal();
     }
   };
 
-  const attachModalListener = (button) => {
-    button.addEventListener("click", () => {
-      const row = button.closest("tr");
-      if (row) openBookingModal(row);
-    });
-  };
+  // 3. OPEN CANCEL CONFIRMATION MODAL (Pop up confirmation)
+  const openCancelConfirmModal = (row) => {
+    currentActiveRow = row;
+    if (!currentActiveRow) return;
 
-  // Load newly booked reservations from storage
-  const loadStoredBookings = () => {
-    let stored = [];
-    try {
-      const fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
-      const fromSession = JSON.parse(sessionStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
-      const mergedMap = new Map();
-      [...fromLocal, ...fromSession].forEach((b) => {
-        if (!b) return;
-        const key = b.id || `${b.date}_${b.room}_${b.meetingTime}`;
-        mergedMap.set(key, b);
-      });
-      stored = Array.from(mergedMap.values());
-    } catch (e) {
-      console.warn("Could not parse rafiBookings from storage", e);
+    const isCancelled = (row.dataset.status || "").toLowerCase() === "cancelled";
+    if (isCancelled) return;
+
+    const title = row.dataset.title || row.children[1]?.textContent?.trim() || "Meeting";
+    const room = row.dataset.room || "Room";
+    const date = row.dataset.bookingDate || "";
+
+    if (cancelModalSummary) {
+      cancelModalSummary.innerHTML = `You are cancelling the reservation for <strong>${escHtml(title)}</strong> in <strong>${escHtml(room)}</strong>${date ? ` on <strong>${formatDateDisplay(date)}</strong>` : ""}.`;
     }
 
-    if (!stored.length || !tbody) return;
+    if (cancelModalToast) cancelModalToast.style.display = "none";
 
-    stored.forEach((b) => {
-      const bookingId = String(b.id || `${b.date}_${b.room}_${b.meetingTime}`);
-      const existing = tbody.querySelector(`tr[data-booking-id="${bookingId}"]`);
-      if (existing) {
-        // If status changed in storage, sync it
-        const currentStatus = (existing.dataset.status || "").toLowerCase();
-        const storedStatus = (b.status || "booked").toLowerCase();
-        if (currentStatus !== storedStatus) {
-          existing.dataset.status = storedStatus;
-          const pill = existing.querySelector(".status-pill");
-          if (pill) {
-            pill.className = `status-pill ${storedStatus === "cancelled" ? "status-cancelled" : "status-booked"}`;
-            pill.textContent = storedStatus === "cancelled" ? "Cancelled" : "Booked";
-          }
-        }
-        return;
-      }
+    if (cancelConfirmModal && typeof cancelConfirmModal.showModal === "function") {
+      cancelConfirmModal.showModal();
+    }
+  };
 
-      const newTr = document.createElement("tr");
-      newTr.dataset.bookingId = bookingId;
-      newTr.dataset.bookingDate = b.date || "";
-      newTr.dataset.bookingMonth = (b.date || "").slice(0, 7);
-      newTr.dataset.bookingTime = b.meetingTime || "";
-      newTr.dataset.room = b.room || "";
-      newTr.dataset.status = (b.status || "booked").toLowerCase();
-      newTr.dataset.employee = b.employee || "User submission";
-      newTr.dataset.title = b.meetingTitle || b.title || "Meeting";
-      newTr.dataset.pax = b.participants || "1";
-      newTr.dataset.roomSetup = b.roomSetup || "Not Applicable";
-      newTr.dataset.additionalInstructions = b.additionalInstructions || "None provided";
-      newTr.dataset.foodCoffee = b.foodPreparation || "None provided";
-      newTr.classList.add("stored-booking-row");
+  // Wire up action buttons on a table row
+  const attachRowActionListeners = (row) => {
+    const btnView = row.querySelector(".btn-view");
+    const btnModify = row.querySelector(".btn-modify");
+    const btnCancel = row.querySelector(".btn-cancel");
 
-      const employeeName = b.employee || "User submission";
-      const initials = employeeName
-        .split(" ")
-        .filter(Boolean)
-        .map((p) => p[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase() || "US";
-
-      const statusText = b.status || "Booked";
-      const statusClass = statusText.toLowerCase() === "cancelled" ? "status-cancelled" : "status-booked";
-
-      newTr.innerHTML = `
-        <td class="person-cell">
-          <span class="avatar avatar-user">${initials}</span>
-          <span>${escHtml(employeeName)}</span>
-        </td>
-        <td>${escHtml(b.meetingTitle || b.title || "Meeting")}</td>
-        <td class="room-cell">${escHtml(b.room || "Room")}<br /><span>${escHtml(b.floor || "")}</span></td>
-        <td class="date-cell">${formatDateDisplay(b.date)}<br /><span>${escHtml(b.meetingTime || "")}</span></td>
-        <td>${escHtml(b.participants || "1")}</td>
-        <td><span class="status-pill ${statusClass}">${escHtml(statusText)}</span></td>
-        <td>
-          <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
-        </td>
-      `;
-
-      const detailBtn = newTr.querySelector(".booking-details-button");
-      if (detailBtn) {
-        attachModalListener(detailBtn);
-      }
-
-      if (noBookingsRow) {
-        tbody.insertBefore(newTr, noBookingsRow);
-      } else {
-        tbody.appendChild(newTr);
-      }
-    });
+    if (btnView) {
+      btnView.addEventListener("click", () => openViewDetailsModal(row));
+    }
+    if (btnModify) {
+      btnModify.addEventListener("click", () => openModifyDetailsModal(row));
+    }
+    if (btnCancel) {
+      btnCancel.addEventListener("click", () => openCancelConfirmModal(row));
+    }
   };
 
   // Update storage for dynamic or static bookings
   const updateBookingInStorage = (bookingId, patch) => {
-    // 1. Update in rafiBookings (for bookings created via booking form)
     let updatedInRafi = false;
     try {
       const fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
@@ -347,11 +323,187 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (e) {}
 
-    // 2. Also save to modifications map so all rows (including static demo rows) persist
     saveStoredModification(bookingId, patch);
   };
 
-  // Main filter application & stats update
+  // Save changes from modify modal
+  if (btnSaveModification) {
+    btnSaveModification.addEventListener("click", () => {
+      if (!currentActiveRow) return;
+
+      const newTitle = modifyInputTitle ? modifyInputTitle.value.trim() : "";
+      const newPax = modifyInputPax ? parseInt(modifyInputPax.value, 10) || 1 : 1;
+      const newSetup = modifyInputSetup ? modifyInputSetup.value : "Not Applicable";
+      const newFood = modifyInputFood ? modifyInputFood.value.trim() : "";
+      const newInstructions = modifyInputInstructions ? modifyInputInstructions.value.trim() : "";
+
+      if (!newTitle) {
+        showModifyToast("Please enter a meeting title.", true);
+        return;
+      }
+
+      // Update DOM row
+      currentActiveRow.dataset.title = newTitle;
+      currentActiveRow.dataset.pax = String(newPax);
+      currentActiveRow.dataset.roomSetup = newSetup;
+      currentActiveRow.dataset.foodCoffee = newFood;
+      currentActiveRow.dataset.additionalInstructions = newInstructions;
+
+      if (currentActiveRow.children[1]) {
+        currentActiveRow.children[1].textContent = newTitle;
+      }
+      if (currentActiveRow.children[4]) {
+        currentActiveRow.children[4].textContent = String(newPax);
+      }
+
+      // Update storage
+      const bookingId = currentActiveRow.dataset.bookingId || "";
+      updateBookingInStorage(bookingId, {
+        meetingTitle: newTitle,
+        title: newTitle,
+        participants: String(newPax),
+        roomSetup: newSetup,
+        foodPreparation: newFood,
+        foodCoffee: newFood,
+        additionalInstructions: newInstructions,
+      });
+
+      showModifyToast("Changes saved successfully!");
+      setTimeout(() => {
+        if (modifyDetailsModal) modifyDetailsModal.close();
+      }, 600);
+    });
+  }
+
+  // Confirm cancellation from cancel modal
+  if (btnConfirmCancellation) {
+    btnConfirmCancellation.addEventListener("click", () => {
+      if (!currentActiveRow) return;
+
+      // Update row status
+      currentActiveRow.dataset.status = "cancelled";
+      const pill = currentActiveRow.querySelector(".status-pill");
+      if (pill) {
+        pill.className = "status-pill status-cancelled";
+        pill.textContent = "Cancelled";
+      }
+
+      // Disable cancel button on row
+      const rowCancelBtn = currentActiveRow.querySelector(".btn-cancel");
+      if (rowCancelBtn) {
+        rowCancelBtn.disabled = true;
+      }
+
+      // Update storage
+      const bookingId = currentActiveRow.dataset.bookingId || "";
+      updateBookingInStorage(bookingId, { status: "Cancelled" });
+
+      // Close modal
+      if (cancelConfirmModal) cancelConfirmModal.close();
+
+      // Recalculate stats & filter
+      applyFilters();
+    });
+  }
+
+  // Load newly booked reservations from storage
+  const loadStoredBookings = () => {
+    let stored = [];
+    try {
+      const fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
+      const fromSession = JSON.parse(sessionStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
+      const mergedMap = new Map();
+      [...fromLocal, ...fromSession].forEach((b) => {
+        if (!b) return;
+        const key = b.id || `${b.date}_${b.room}_${b.meetingTime}`;
+        mergedMap.set(key, b);
+      });
+      stored = Array.from(mergedMap.values());
+    } catch (e) {
+      console.warn("Could not parse rafiBookings from storage", e);
+    }
+
+    if (!stored.length || !tbody) return;
+
+    stored.forEach((b) => {
+      const bookingId = String(b.id || `${b.date}_${b.room}_${b.meetingTime}`);
+      const existing = tbody.querySelector(`tr[data-booking-id="${bookingId}"]`);
+      if (existing) {
+        const currentStatus = (existing.dataset.status || "").toLowerCase();
+        const storedStatus = (b.status || "booked").toLowerCase();
+        if (currentStatus !== storedStatus) {
+          existing.dataset.status = storedStatus;
+          const pill = existing.querySelector(".status-pill");
+          if (pill) {
+            pill.className = `status-pill ${storedStatus === "cancelled" ? "status-cancelled" : "status-booked"}`;
+            pill.textContent = storedStatus === "cancelled" ? "Cancelled" : "Booked";
+          }
+          const cancelBtn = existing.querySelector(".btn-cancel");
+          if (cancelBtn) {
+            cancelBtn.disabled = storedStatus === "cancelled";
+          }
+        }
+        return;
+      }
+
+      const isCancelled = (b.status || "booked").toLowerCase() === "cancelled";
+      const newTr = document.createElement("tr");
+      newTr.dataset.bookingId = bookingId;
+      newTr.dataset.bookingDate = b.date || "";
+      newTr.dataset.bookingMonth = (b.date || "").slice(0, 7);
+      newTr.dataset.bookingTime = b.meetingTime || "";
+      newTr.dataset.room = b.room || "";
+      newTr.dataset.status = isCancelled ? "cancelled" : "booked";
+      newTr.dataset.employee = b.employee || "User submission";
+      newTr.dataset.title = b.meetingTitle || b.title || "Meeting";
+      newTr.dataset.pax = b.participants || "1";
+      newTr.dataset.roomSetup = b.roomSetup || "Not Applicable";
+      newTr.dataset.additionalInstructions = b.additionalInstructions || "None provided";
+      newTr.dataset.foodCoffee = b.foodPreparation || "None provided";
+      newTr.classList.add("stored-booking-row");
+
+      const employeeName = b.employee || "User submission";
+      const initials = employeeName
+        .split(" ")
+        .filter(Boolean)
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "US";
+
+      const statusText = isCancelled ? "Cancelled" : (b.status || "Booked");
+      const statusClass = isCancelled ? "status-cancelled" : "status-booked";
+
+      newTr.innerHTML = `
+        <td class="person-cell">
+          <span class="avatar avatar-user">${initials}</span>
+          <span>${escHtml(employeeName)}</span>
+        </td>
+        <td>${escHtml(b.meetingTitle || b.title || "Meeting")}</td>
+        <td class="room-cell">${escHtml(b.room || "Room")}<br /><span>${escHtml(b.floor || "")}</span></td>
+        <td class="date-cell">${formatDateDisplay(b.date)}<br /><span>${escHtml(b.meetingTime || "")}</span></td>
+        <td>${escHtml(b.participants || "1")}</td>
+        <td><span class="status-pill ${statusClass}">${escHtml(statusText)}</span></td>
+        <td class="action-cell">
+          <div class="action-buttons-group">
+            <button class="btn-action btn-view" type="button" aria-label="View details">View details</button>
+            <button class="btn-action btn-modify" type="button" aria-label="Modify booking">Modify</button>
+            <button class="btn-action btn-cancel" type="button" aria-label="Cancel booking" ${isCancelled ? "disabled" : ""}>Cancel</button>
+          </div>
+        </td>
+      `;
+
+      attachRowActionListeners(newTr);
+
+      if (noBookingsRow) {
+        tbody.insertBefore(newTr, noBookingsRow);
+      } else {
+        tbody.appendChild(newTr);
+      }
+    });
+  };
+
+  // Filter application & stats calculation
   const applyFilters = () => {
     loadStoredBookings();
 
@@ -414,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resetFilterButton.disabled = !hasFilter;
     }
 
-    // Update the Two Stat Containers
+    // Update 2 Stat Cards
     if (hasFilter) {
       if (statTotalBookings) {
         statTotalBookings.textContent = visibleCount;
@@ -487,12 +639,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dateFilter.addEventListener("change", handleDateInput);
     dateFilter.addEventListener("input", handleDateInput);
-    dateFilter.addEventListener("focus", () => {
-      loadStoredBookings();
-    });
-    dateFilter.addEventListener("click", () => {
-      loadStoredBookings();
-    });
+    dateFilter.addEventListener("focus", () => loadStoredBookings());
+    dateFilter.addEventListener("click", () => loadStoredBookings());
   }
 
   // Clear filters
@@ -514,111 +662,28 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyResetButton.addEventListener("click", resetFilters);
   }
 
-  // Save changes from modal
-  if (btnModalSave) {
-    btnModalSave.addEventListener("click", () => {
-      if (!currentActiveRow) return;
-
-      const newTitle = editModalTitle ? editModalTitle.value.trim() : "";
-      const newPax = editModalPax ? parseInt(editModalPax.value, 10) || 1 : 1;
-      const newSetup = editModalSetup ? editModalSetup.value : "Not Applicable";
-      const newFood = editModalFood ? editModalFood.value.trim() : "";
-      const newInstructions = editModalInstructions ? editModalInstructions.value.trim() : "";
-
-      if (!newTitle) {
-        showToast("Please enter a meeting title.", true);
-        return;
-      }
-
-      // Update DOM row
-      currentActiveRow.dataset.title = newTitle;
-      currentActiveRow.dataset.pax = String(newPax);
-      currentActiveRow.dataset.roomSetup = newSetup;
-      currentActiveRow.dataset.foodCoffee = newFood;
-      currentActiveRow.dataset.additionalInstructions = newInstructions;
-
-      if (currentActiveRow.children[1]) {
-        currentActiveRow.children[1].textContent = newTitle;
-      }
-      if (currentActiveRow.children[4]) {
-        currentActiveRow.children[4].textContent = String(newPax);
-      }
-
-      // Update storage
-      const bookingId = currentActiveRow.dataset.bookingId || "";
-      updateBookingInStorage(bookingId, {
-        meetingTitle: newTitle,
-        title: newTitle,
-        participants: String(newPax),
-        roomSetup: newSetup,
-        foodPreparation: newFood,
-        foodCoffee: newFood,
-        additionalInstructions: newInstructions,
-      });
-
-      showToast("Changes saved successfully!");
-      setTimeout(() => {
-        if (bookingModal) bookingModal.close();
-      }, 700);
-    });
-  }
-
-  // Cancel booking from modal
-  if (btnModalCancel) {
-    btnModalCancel.addEventListener("click", () => {
-      if (!currentActiveRow) return;
-
-      const isAlreadyCancelled = (currentActiveRow.dataset.status || "").toLowerCase() === "cancelled";
-      if (isAlreadyCancelled) return;
-
-      const confirmed = window.confirm("Are you sure you want to cancel this booking?");
-      if (!confirmed) return;
-
-      // Update row
-      currentActiveRow.dataset.status = "cancelled";
-      const pill = currentActiveRow.querySelector(".status-pill");
-      if (pill) {
-        pill.className = "status-pill status-cancelled";
-        pill.textContent = "Cancelled";
-      }
-
-      // Update modal view
-      if (modalStatusPill) {
-        modalStatusPill.className = "status-pill status-cancelled";
-        modalStatusPill.textContent = "Cancelled";
-      }
-      btnModalCancel.disabled = true;
-      btnModalCancel.textContent = "Booking cancelled";
-
-      // Persist cancellation
-      const bookingId = currentActiveRow.dataset.bookingId || "";
-      updateBookingInStorage(bookingId, { status: "Cancelled" });
-
-      showToast("Booking has been cancelled.");
-
-      // Refresh filter & occupied stats count
-      applyFilters();
-    });
-  }
-
-  // Close modal handlers
+  // Close modals
   closeModalButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (bookingModal) bookingModal.close();
+      if (viewDetailsModal) viewDetailsModal.close();
+      if (modifyDetailsModal) modifyDetailsModal.close();
+      if (cancelConfirmModal) cancelConfirmModal.close();
     });
   });
 
-  if (bookingModal) {
-    bookingModal.addEventListener("click", (event) => {
-      if (event.target === bookingModal) {
-        bookingModal.close();
-      }
-    });
-  }
+  [viewDetailsModal, modifyDetailsModal, cancelConfirmModal].forEach((modal) => {
+    if (modal) {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          modal.close();
+        }
+      });
+    }
+  });
 
-  // Initial bindings for static rows
-  const initialButtons = Array.from(document.querySelectorAll(".booking-details-button"));
-  initialButtons.forEach((btn) => attachModalListener(btn));
+  // Attach action listeners to static rows
+  const staticRows = Array.from(document.querySelectorAll("#bookings-tbody tr:not(.no-bookings-row)"));
+  staticRows.forEach((row) => attachRowActionListeners(row));
 
   // Sync across tabs & windows
   window.addEventListener("storage", (event) => {
@@ -635,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilters();
   });
 
-  // Run initial setup
+  // Initial load
   applySavedModificationsToStaticRows();
   loadStoredBookings();
   applyFilters();

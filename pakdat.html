@@ -116,8 +116,12 @@
                   <td class="date-cell">October 5, 2026<br /><span>9:00 AM - 10:00 AM</span></td>
                   <td>6</td>
                   <td><span class="status-pill status-booked">Booked</span></td>
-                  <td>
-                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  <td class="action-cell">
+                    <div class="action-buttons-group">
+                      <button class="btn-action btn-view" type="button" aria-label="View details for Budget Planning">View details</button>
+                      <button class="btn-action btn-modify" type="button" aria-label="Modify Budget Planning">Modify</button>
+                      <button class="btn-action btn-cancel" type="button" aria-label="Cancel Budget Planning">Cancel</button>
+                    </div>
                   </td>
                 </tr>
 
@@ -144,8 +148,12 @@
                   <td class="date-cell">October 7, 2026<br /><span>10:00 AM - 11:00 AM</span></td>
                   <td>4</td>
                   <td><span class="status-pill status-upcoming">Booked</span></td>
-                  <td>
-                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  <td class="action-cell">
+                    <div class="action-buttons-group">
+                      <button class="btn-action btn-view" type="button" aria-label="View details for System Design Review">View details</button>
+                      <button class="btn-action btn-modify" type="button" aria-label="Modify System Design Review">Modify</button>
+                      <button class="btn-action btn-cancel" type="button" aria-label="Cancel System Design Review">Cancel</button>
+                    </div>
                   </td>
                 </tr>
 
@@ -172,8 +180,12 @@
                   <td class="date-cell">October 12, 2026<br /><span>2:00 PM - 3:00 PM</span></td>
                   <td>9</td>
                   <td><span class="status-pill status-cancelled">Cancelled</span></td>
-                  <td>
-                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  <td class="action-cell">
+                    <div class="action-buttons-group">
+                      <button class="btn-action btn-view" type="button" aria-label="View details for Product Planning Meeting">View details</button>
+                      <button class="btn-action btn-modify" type="button" aria-label="Modify Product Planning Meeting">Modify</button>
+                      <button class="btn-action btn-cancel" type="button" aria-label="Cancel Product Planning Meeting" disabled>Cancel</button>
+                    </div>
                   </td>
                 </tr>
 
@@ -200,8 +212,12 @@
                   <td class="date-cell">October 12, 2026<br /><span>10:00 AM - 11:00 AM</span></td>
                   <td>3</td>
                   <td><span class="status-pill status-cancelled">Cancelled</span></td>
-                  <td>
-                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  <td class="action-cell">
+                    <div class="action-buttons-group">
+                      <button class="btn-action btn-view" type="button" aria-label="View details for Team Standup">View details</button>
+                      <button class="btn-action btn-modify" type="button" aria-label="Modify Team Standup">Modify</button>
+                      <button class="btn-action btn-cancel" type="button" aria-label="Cancel Team Standup" disabled>Cancel</button>
+                    </div>
                   </td>
                 </tr>
 
@@ -228,8 +244,12 @@
                   <td class="date-cell">October 17, 2026<br /><span>10:00 AM - 11:00 AM</span></td>
                   <td>6</td>
                   <td><span class="status-pill status-booked">Booked</span></td>
-                  <td>
-                    <button class="booking-details-button" type="button" aria-haspopup="dialog" aria-controls="booking-modal">View details</button>
+                  <td class="action-cell">
+                    <div class="action-buttons-group">
+                      <button class="btn-action btn-view" type="button" aria-label="View details for MEETING">View details</button>
+                      <button class="btn-action btn-modify" type="button" aria-label="Modify MEETING">Modify</button>
+                      <button class="btn-action btn-cancel" type="button" aria-label="Cancel MEETING">Cancel</button>
+                    </div>
                   </td>
                 </tr>
 
@@ -252,51 +272,106 @@
       </main>
     </div>
 
-    <dialog class="booking-modal" id="booking-modal" aria-labelledby="booking-modal-title">
+    <!-- 1. VIEW DETAILS MODAL (Viewing only) -->
+    <dialog class="booking-modal" id="view-details-modal" aria-labelledby="view-modal-title">
       <header class="modal-heading">
         <span class="confirmation-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12.5 4.5 4.5L19 6" /></svg>
         </span>
-        <h2 id="booking-modal-title">Reservation Details</h2>
-        <p class="modal-subtitle-text">View or modify employee reservation details below.</p>
+        <h2 id="view-modal-title">Reservation Details</h2>
+        <p class="modal-subtitle-text">Full details of this meeting room reservation.</p>
+      </header>
+
+      <div class="view-details-card">
+        <div class="view-item">
+          <span class="view-label">Status</span>
+          <span class="view-value"><span class="status-pill status-booked" id="view-status-pill">Booked</span></span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Employee</span>
+          <span class="view-value" id="view-employee">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Meeting title</span>
+          <span class="view-value" id="view-title">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Room &amp; Floor</span>
+          <span class="view-value" id="view-room">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Date &amp; Time</span>
+          <span class="view-value" id="view-datetime">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Pax (Participants)</span>
+          <span class="view-value" id="view-pax">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Room setup</span>
+          <span class="view-value" id="view-setup">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Food / Coffee</span>
+          <span class="view-value" id="view-food">—</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Additional instructions</span>
+          <span class="view-value" id="view-instructions">—</span>
+        </div>
+      </div>
+
+      <div class="modal-actions-bar single-action">
+        <button type="button" class="btn-modal-ghost modal-close">Close</button>
+      </div>
+    </dialog>
+
+    <!-- 2. MODIFY MODAL (Modify details and save) -->
+    <dialog class="booking-modal" id="modify-details-modal" aria-labelledby="modify-modal-title">
+      <header class="modal-heading">
+        <span class="confirmation-icon icon-modify" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+        </span>
+        <h2 id="modify-modal-title">Modify Reservation</h2>
+        <p class="modal-subtitle-text">Update the meeting and room requirements below.</p>
       </header>
 
       <div class="modal-meta-card">
         <div class="modal-meta-row">
           <span class="modal-meta-label">Employee</span>
-          <span class="modal-meta-value" id="modal-employee">—</span>
+          <span class="modal-meta-value" id="modify-employee">—</span>
         </div>
         <div class="modal-meta-row">
           <span class="modal-meta-label">Room &amp; Floor</span>
-          <span class="modal-meta-value" id="modal-room">—</span>
+          <span class="modal-meta-value" id="modify-room">—</span>
         </div>
         <div class="modal-meta-row">
           <span class="modal-meta-label">Date &amp; Time</span>
-          <span class="modal-meta-value" id="modal-datetime">—</span>
+          <span class="modal-meta-value" id="modify-datetime">—</span>
         </div>
         <div class="modal-meta-row">
           <span class="modal-meta-label">Status</span>
           <span class="modal-meta-value">
-            <span class="status-pill status-booked" id="modal-status-pill">Booked</span>
+            <span class="status-pill status-booked" id="modify-status-pill">Booked</span>
           </span>
         </div>
       </div>
 
-      <form id="booking-edit-form" class="modal-edit-form" onsubmit="return false;">
+      <form id="modify-booking-form" class="modal-edit-form" onsubmit="return false;">
         <div class="modal-field-group">
-          <label for="edit-modal-title">Meeting title</label>
-          <input type="text" id="edit-modal-title" class="modal-input" placeholder="e.g. Budget Planning" required />
+          <label for="modify-input-title">Meeting title</label>
+          <input type="text" id="modify-input-title" class="modal-input" placeholder="e.g. Budget Planning" required />
         </div>
 
         <div class="modal-field-row">
           <div class="modal-field-group">
-            <label for="edit-modal-pax">Pax (Participants)</label>
-            <input type="number" id="edit-modal-pax" class="modal-input" min="1" max="100" placeholder="e.g. 6" required />
+            <label for="modify-input-pax">Pax (Participants)</label>
+            <input type="number" id="modify-input-pax" class="modal-input" min="1" max="100" placeholder="e.g. 6" required />
           </div>
 
           <div class="modal-field-group">
-            <label for="edit-modal-setup">Room setup</label>
-            <select id="edit-modal-setup" class="modal-select">
+            <label for="modify-input-setup">Room setup</label>
+            <select id="modify-input-setup" class="modal-select">
               <option value="Boardroom layout with 10 seats">Boardroom layout with 10 seats</option>
               <option value="Classroom type without table">Classroom type without table</option>
               <option value="U-shape">U-shape</option>
@@ -307,28 +382,48 @@
         </div>
 
         <div class="modal-field-group">
-          <label for="edit-modal-food">Food / coffee preparation</label>
-          <input type="text" id="edit-modal-food" class="modal-input" placeholder="e.g. Coffee for 6, water and mints" />
+          <label for="modify-input-food">Food / coffee preparation</label>
+          <input type="text" id="modify-input-food" class="modal-input" placeholder="e.g. Coffee for 6, water and mints" />
         </div>
 
         <div class="modal-field-group">
-          <label for="edit-modal-instructions">Additional instructions</label>
-          <textarea id="edit-modal-instructions" class="modal-textarea" rows="2" placeholder="e.g. Check audio equipment, whiteboard markers"></textarea>
+          <label for="modify-input-instructions">Additional instructions</label>
+          <textarea id="modify-input-instructions" class="modal-textarea" rows="2" placeholder="e.g. Check audio equipment, whiteboard markers"></textarea>
         </div>
 
-        <div id="modal-toast" class="modal-toast" style="display: none;"></div>
+        <div id="modify-modal-toast" class="modal-toast" style="display: none;"></div>
 
         <div class="modal-actions-bar">
-          <button type="button" class="btn-cancel-reservation" id="btn-modal-cancel">
-            Cancel booking
-          </button>
-          
+          <div></div>
           <div class="modal-right-actions">
-            <button type="button" class="btn-modal-ghost modal-close">Close</button>
-            <button type="button" class="btn-modal-save" id="btn-modal-save">Save changes</button>
+            <button type="button" class="btn-modal-ghost modal-close">Cancel</button>
+            <button type="button" class="btn-modal-save" id="btn-save-modification">Save changes</button>
           </div>
         </div>
       </form>
+    </dialog>
+
+    <!-- 3. CANCEL CONFIRMATION MODAL (Pop up confirmation to cancel) -->
+    <dialog class="booking-modal cancel-dialog" id="cancel-confirm-modal" aria-labelledby="cancel-modal-title">
+      <header class="modal-heading">
+        <span class="confirmation-icon icon-danger" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="10" stroke-width="2" /><line x1="12" y1="8" x2="12" y2="12" stroke-width="2" /><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" /></svg>
+        </span>
+        <h2 id="cancel-modal-title">Cancel Reservation?</h2>
+        <p class="modal-subtitle-text">Please confirm that you want to cancel this booking.</p>
+      </header>
+
+      <div class="cancel-notice-box">
+        <p id="cancel-modal-summary">You are cancelling the reservation for <strong>Meeting Title</strong> in <strong>Room</strong>.</p>
+        <p class="cancel-subtext">This action will mark the booking as cancelled and free up the room.</p>
+      </div>
+
+      <div id="cancel-modal-toast" class="modal-toast" style="display: none;"></div>
+
+      <div class="modal-actions-bar cancel-actions-bar">
+        <button type="button" class="btn-modal-ghost modal-close">Keep reservation</button>
+        <button type="button" class="btn-cancel-confirm" id="btn-confirm-cancellation">Yes, cancel reservation</button>
+      </div>
     </dialog>
 
     <script src="villadolid.js"></script>
