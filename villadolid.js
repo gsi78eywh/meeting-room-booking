@@ -486,9 +486,15 @@ document.addEventListener("DOMContentLoaded", () => {
         <td><span class="status-pill ${statusClass}">${escHtml(statusText)}</span></td>
         <td class="action-cell">
           <div class="action-buttons-group">
-            <button class="btn-action btn-view" type="button" aria-label="View details">View details</button>
-            <button class="btn-action btn-modify" type="button" aria-label="Modify booking">Modify</button>
-            <button class="btn-action btn-cancel" type="button" aria-label="Cancel booking" ${isCancelled ? "disabled" : ""}>Cancel</button>
+            <button class="btn-action btn-view" type="button" title="View details" aria-label="View details">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="btn-action btn-modify" type="button" title="Modify reservation" aria-label="Modify reservation">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-action btn-cancel" type="button" title="${isCancelled ? "Reservation is already cancelled" : "Cancel reservation"}" aria-label="Cancel reservation" ${isCancelled ? "disabled" : ""}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </td>
       `;
