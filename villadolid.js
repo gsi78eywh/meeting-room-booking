@@ -4,33 +4,40 @@ document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.querySelector("#bookings-tbody");
   const noBookingsRow = document.querySelector("#no-bookings-row");
   const dateFilter = document.querySelector("#booking-date-filter");
-  const timeFilter = document.querySelector("#booking-time-filter");
+  const periodChips = Array.from(document.querySelectorAll(".period-chip"));
   const resetFilterButton = document.querySelector("#booking-reset-filter");
   const emptyResetButton = document.querySelector("#empty-reset-btn");
   const bookingCount = document.querySelector("#booking-count");
 
-  // Three container stat elements
+  // Stat elements (Total bookings & Rooms occupied)
   const statTotalBookings = document.querySelector("#stat-total-bookings");
   const statOccupiedRooms = document.querySelector("#stat-occupied-rooms");
-  const statAvailableRooms = document.querySelector("#stat-available-rooms");
   const statFootBookings = document.querySelector("#stat-foot-bookings");
   const statFootOccupied = document.querySelector("#stat-foot-occupied");
-  const statFootAvailable = document.querySelector("#stat-foot-available");
 
   // Modal elements
   const bookingModal = document.querySelector("#booking-modal");
-  const closeModalButton = bookingModal ? bookingModal.querySelector(".modal-close") : null;
-  const detailFields = {
-    roomSetup: bookingModal ? bookingModal.querySelector("#detail-room-setup") : null,
-    instructions: bookingModal ? bookingModal.querySelector("#detail-instructions") : null,
-    foodCoffee: bookingModal ? bookingModal.querySelector("#detail-food-coffee") : null,
-  };
+  const closeModalButtons = Array.from(document.querySelectorAll(".modal-close"));
+  const modalEmployee = document.querySelector("#modal-employee");
+  const modalRoom = document.querySelector("#modal-room");
+  const modalDatetime = document.querySelector("#modal-datetime");
+  const modalStatusPill = document.querySelector("#modal-status-pill");
 
-  const fallbackDetails = {
-    roomSetup: "Boardroom layout with 10 seats and a projector",
-    instructions: "Please keep the room cool and have the screen connected before the meeting starts.",
-    foodCoffee: "2 coffees, 1 tea, and light snacks for attendees",
-  };
+  const editModalTitle = document.querySelector("#edit-modal-title");
+  const editModalPax = document.querySelector("#edit-modal-pax");
+  const editModalSetup = document.querySelector("#edit-modal-setup");
+  const editModalFood = document.querySelector("#edit-modal-food");
+  const editModalInstructions = document.querySelector("#edit-modal-instructions");
+  const modalToast = document.querySelector("#modal-toast");
+  const btnModalCancel = document.querySelector("#btn-modal-cancel");
+  const btnModalSave = document.querySelector("#btn-modal-save");
+
+  let currentActiveRow = null;
+  let activePeriod = "all"; // "all" | "day" | "week" | "month" | "custom"
+
+  // Storage keys
+  const STORAGE_KEY_BOOKINGS = "rafiBookings";
+  const STORAGE_KEY_MODS = "rafiRowModifications";
 
   const escHtml = (str) => {
     return String(str ?? "")
@@ -41,7 +48,50 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   };
 
-  // Helper date formatting (e.g., "2026-10-05" -> "October 5, 2026")
+  const showToast = (message, isError = false) => {
+    if (!modalToast) return;
+    modalToast.textContent = message;
+    modalToast.className = `modal-toast ${isError ? "error" : ""}`;
+    modalToast.style.display = "block";
+    setTimeout(() => {
+      modalToast.style.display = "none";
+    }, 3200);
+  };
+
+  const getTodayStr = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const getWeekRange = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const distanceToMonday = (dayOfWeek + 6) % 7;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - distanceToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fmt = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    return { start: fmt(monday), end: fmt(sunday) };
+  };
+
+  const getCurrentMonthStr = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  };
+
   const formatDateDisplay = (isoDate) => {
     if (!isoDate) return "—";
     try {
@@ -60,24 +110,120 @@ document.addEventListener("DOMContentLoaded", () => {
     return isoDate;
   };
 
-  // Attach modal detail listener to a button
+  // Persisted hardcoded row modifications (edits/cancellations)
+  const getStoredModifications = () => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_MODS) || "{}");
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const saveStoredModification = (bookingId, patch) => {
+    if (!bookingId) return;
+    const mods = getStoredModifications();
+    mods[bookingId] = { ...(mods[bookingId] || {}), ...patch };
+    try {
+      localStorage.setItem(STORAGE_KEY_MODS, JSON.stringify(mods));
+    } catch (e) {}
+  };
+
+  // Apply saved modifications to static rows on initial load
+  const applySavedModificationsToStaticRows = () => {
+    const mods = getStoredModifications();
+    Object.keys(mods).forEach((id) => {
+      const row = tbody ? tbody.querySelector(`tr[data-booking-id="${id}"]`) : null;
+      if (!row) return;
+      const mod = mods[id];
+      if (mod.title) {
+        row.dataset.title = mod.title;
+        if (row.children[1]) row.children[1].textContent = mod.title;
+      }
+      if (mod.pax) {
+        row.dataset.pax = mod.pax;
+        if (row.children[4]) row.children[4].textContent = mod.pax;
+      }
+      if (mod.roomSetup) row.dataset.roomSetup = mod.roomSetup;
+      if (mod.additionalInstructions) row.dataset.additionalInstructions = mod.additionalInstructions;
+      if (mod.foodCoffee) row.dataset.foodCoffee = mod.foodCoffee;
+      if (mod.status) {
+        row.dataset.status = mod.status.toLowerCase();
+        const pill = row.querySelector(".status-pill");
+        if (pill) {
+          if (mod.status.toLowerCase() === "cancelled") {
+            pill.className = "status-pill status-cancelled";
+            pill.textContent = "Cancelled";
+          } else {
+            pill.className = "status-pill status-booked";
+            pill.textContent = "Booked";
+          }
+        }
+      }
+    });
+  };
+
+  // Modal open & population
+  const openBookingModal = (row) => {
+    currentActiveRow = row;
+    if (!currentActiveRow) return;
+
+    const employee = row.dataset.employee || row.querySelector(".person-cell span:not(.avatar)")?.textContent?.trim() || "User submission";
+    const title = row.dataset.title || row.children[1]?.textContent?.trim() || "";
+    const room = row.dataset.room || "Room";
+    const floor = row.querySelector(".room-cell span")?.textContent?.trim() || "";
+    const date = row.dataset.bookingDate || "";
+    const time = row.dataset.bookingTime || row.querySelector(".date-cell span")?.textContent?.trim() || "";
+    const pax = row.dataset.pax || row.children[4]?.textContent?.trim() || "1";
+    const status = (row.dataset.status || row.querySelector(".status-pill")?.textContent || "booked").trim().toLowerCase();
+    const roomSetup = row.dataset.roomSetup || "Not Applicable";
+    const instructions = row.dataset.additionalInstructions || "";
+    const food = row.dataset.foodCoffee || "";
+
+    // Fill overview card
+    if (modalEmployee) modalEmployee.textContent = employee;
+    if (modalRoom) modalRoom.textContent = floor ? `${room} (${floor})` : room;
+    if (modalDatetime) modalDatetime.textContent = `${formatDateDisplay(date)} • ${time}`;
+
+    const isCancelled = status === "cancelled";
+    if (modalStatusPill) {
+      modalStatusPill.className = `status-pill ${isCancelled ? "status-cancelled" : "status-booked"}`;
+      modalStatusPill.textContent = isCancelled ? "Cancelled" : "Booked";
+    }
+
+    // Fill editable fields
+    if (editModalTitle) editModalTitle.value = title;
+    if (editModalPax) editModalPax.value = pax;
+    if (editModalSetup) {
+      editModalSetup.value = roomSetup;
+      if (!editModalSetup.value) {
+        editModalSetup.value = "Not Applicable";
+      }
+    }
+    if (editModalFood) editModalFood.value = food;
+    if (editModalInstructions) editModalInstructions.value = instructions;
+
+    // Cancel button state
+    if (btnModalCancel) {
+      if (isCancelled) {
+        btnModalCancel.disabled = true;
+        btnModalCancel.textContent = "Booking cancelled";
+      } else {
+        btnModalCancel.disabled = false;
+        btnModalCancel.textContent = "Cancel booking";
+      }
+    }
+
+    if (modalToast) modalToast.style.display = "none";
+
+    if (bookingModal && typeof bookingModal.showModal === "function") {
+      bookingModal.showModal();
+    }
+  };
+
   const attachModalListener = (button) => {
     button.addEventListener("click", () => {
-      const booking = button.closest("tr");
-      if (!booking) return;
-
-      if (detailFields.roomSetup) {
-        detailFields.roomSetup.textContent = booking.dataset.roomSetup || fallbackDetails.roomSetup;
-      }
-      if (detailFields.instructions) {
-        detailFields.instructions.textContent = booking.dataset.additionalInstructions || fallbackDetails.instructions;
-      }
-      if (detailFields.foodCoffee) {
-        detailFields.foodCoffee.textContent = booking.dataset.foodCoffee || fallbackDetails.foodCoffee;
-      }
-      if (bookingModal && typeof bookingModal.showModal === "function") {
-        bookingModal.showModal();
-      }
+      const row = button.closest("tr");
+      if (row) openBookingModal(row);
     });
   };
 
@@ -85,8 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadStoredBookings = () => {
     let stored = [];
     try {
-      const fromLocal = JSON.parse(localStorage.getItem("rafiBookings") || "[]");
-      const fromSession = JSON.parse(sessionStorage.getItem("rafiBookings") || "[]");
+      const fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
+      const fromSession = JSON.parse(sessionStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
       const mergedMap = new Map();
       [...fromLocal, ...fromSession].forEach((b) => {
         if (!b) return;
@@ -102,9 +248,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     stored.forEach((b) => {
       const bookingId = String(b.id || `${b.date}_${b.room}_${b.meetingTime}`);
-      // Check if already in DOM
       const existing = tbody.querySelector(`tr[data-booking-id="${bookingId}"]`);
-      if (existing) return;
+      if (existing) {
+        // If status changed in storage, sync it
+        const currentStatus = (existing.dataset.status || "").toLowerCase();
+        const storedStatus = (b.status || "booked").toLowerCase();
+        if (currentStatus !== storedStatus) {
+          existing.dataset.status = storedStatus;
+          const pill = existing.querySelector(".status-pill");
+          if (pill) {
+            pill.className = `status-pill ${storedStatus === "cancelled" ? "status-cancelled" : "status-booked"}`;
+            pill.textContent = storedStatus === "cancelled" ? "Cancelled" : "Booked";
+          }
+        }
+        return;
+      }
 
       const newTr = document.createElement("tr");
       newTr.dataset.bookingId = bookingId;
@@ -115,6 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
       newTr.dataset.status = (b.status || "booked").toLowerCase();
       newTr.dataset.employee = b.employee || "User submission";
       newTr.dataset.title = b.meetingTitle || b.title || "Meeting";
+      newTr.dataset.pax = b.participants || "1";
       newTr.dataset.roomSetup = b.roomSetup || "Not Applicable";
       newTr.dataset.additionalInstructions = b.additionalInstructions || "None provided";
       newTr.dataset.foodCoffee = b.foodPreparation || "None provided";
@@ -160,102 +319,58 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Time parsing helpers for robust slot comparison
-  const parseTimeToMinutes = (tStr) => {
-    if (!tStr) return null;
-    const match = tStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-    if (!match) return null;
-    let hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    const meridiem = match[3] ? match[3].toUpperCase() : null;
+  // Update storage for dynamic or static bookings
+  const updateBookingInStorage = (bookingId, patch) => {
+    // 1. Update in rafiBookings (for bookings created via booking form)
+    let updatedInRafi = false;
+    try {
+      const fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
+      const fromSession = JSON.parse(sessionStorage.getItem(STORAGE_KEY_BOOKINGS) || "[]");
 
-    if (meridiem === "PM" && hours < 12) hours += 12;
-    if (meridiem === "AM" && hours === 12) hours = 0;
-    return hours * 60 + minutes;
-  };
+      const updateList = (list) => {
+        return list.map((b) => {
+          const id = String(b.id || `${b.date}_${b.room}_${b.meetingTime}`);
+          if (id === bookingId) {
+            updatedInRafi = true;
+            return { ...b, ...patch };
+          }
+          return b;
+        });
+      };
 
-  const parseTimeRange = (rangeStr) => {
-    if (!rangeStr) return null;
-    const parts = rangeStr.split(/[-–—]|to/i).map((s) => s.trim());
-    if (parts.length >= 2) {
-      const startMin = parseTimeToMinutes(parts[0]);
-      const endMin = parseTimeToMinutes(parts[1]);
-      if (startMin !== null && endMin !== null) {
-        return { start: startMin, end: endMin };
+      const newLocal = updateList(fromLocal);
+      const newSession = updateList(fromSession);
+
+      if (updatedInRafi) {
+        localStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(newLocal));
+        sessionStorage.setItem(STORAGE_KEY_BOOKINGS, JSON.stringify(newSession));
       }
-    }
-    const singleMin = parseTimeToMinutes(rangeStr);
-    if (singleMin !== null) {
-      return { start: singleMin, end: singleMin + 60 };
-    }
-    return null;
+    } catch (e) {}
+
+    // 2. Also save to modifications map so all rows (including static demo rows) persist
+    saveStoredModification(bookingId, patch);
   };
 
-  const matchBookingTime = (rowTimeStr, selectedTime) => {
-    if (!selectedTime) return true;
-    const cleanSelected = selectedTime.trim().toLowerCase();
-    const cleanRow = (rowTimeStr || "").trim().toLowerCase();
-
-    if (!cleanRow) return false;
-
-    const rowRange = parseTimeRange(cleanRow);
-
-    if (cleanSelected === "morning") {
-      // Morning: starts before 12:00 PM (720 min)
-      if (rowRange) {
-        return rowRange.start < 720;
-      }
-      return cleanRow.includes("am");
-    }
-
-    if (cleanSelected === "afternoon") {
-      // Afternoon: reaches into or starts after 12:00 PM
-      if (rowRange) {
-        return rowRange.end > 720 && rowRange.start >= 660;
-      }
-      return cleanRow.includes("pm");
-    }
-
-    // Direct string match or substring match
-    if (cleanRow === cleanSelected || cleanRow.includes(cleanSelected) || cleanSelected.includes(cleanRow)) {
-      return true;
-    }
-
-    // Interval overlap comparison
-    const filterRange = parseTimeRange(cleanSelected);
-    if (rowRange && filterRange) {
-      return rowRange.start < filterRange.end && rowRange.end > filterRange.start;
-    }
-
-    return false;
-  };
-
-  const matchBookingDate = (rowDate, selectedDate) => {
-    if (!selectedDate) return true;
-    if (!rowDate) return false;
-    const cleanRowDate = rowDate.trim().slice(0, 10);
-    const cleanSelectedDate = selectedDate.trim().slice(0, 10);
-    return cleanRowDate === cleanSelectedDate;
-  };
-
-  // Main filter application & container update function
+  // Main filter application & stats update
   const applyFilters = () => {
-    // 1. Ensure latest stored bookings are present
     loadStoredBookings();
 
     const selectedDate = dateFilter ? dateFilter.value.trim() : "";
-    const selectedTime = timeFilter ? timeFilter.value.trim() : "";
-    const hasFilter = Boolean(selectedDate || selectedTime);
+    const hasFilter = Boolean(selectedDate || (activePeriod && activePeriod !== "all"));
 
     const rows = Array.from(document.querySelectorAll("#bookings-tbody tr:not(.no-bookings-row)"));
+
+    const todayStr = getTodayStr();
+    const week = getWeekRange();
+    const currentMonthStr = getCurrentMonthStr();
 
     let visibleCount = 0;
     const matchingOccupiedRooms = new Set();
     const allOccupiedRooms = new Set();
 
     rows.forEach((row) => {
-      const rowDate = row.dataset.bookingDate || "";
-      const rowTime = row.dataset.bookingTime || row.querySelector(".date-cell span")?.textContent?.trim() || "";
+      const rowDate = (row.dataset.bookingDate || "").trim().slice(0, 10);
+      const rowMonth = row.dataset.bookingMonth || rowDate.slice(0, 7);
       const rowRoom = row.dataset.room || row.querySelector(".room-cell")?.firstChild?.textContent?.trim() || "";
       const rowStatus = (row.dataset.status || row.querySelector(".status-pill")?.textContent || "").trim().toLowerCase();
 
@@ -265,11 +380,18 @@ document.addEventListener("DOMContentLoaded", () => {
         allOccupiedRooms.add(rowRoom);
       }
 
-      const matchDate = matchBookingDate(rowDate, selectedDate);
-      const matchTime = matchBookingTime(rowTime, selectedTime);
+      let matchPeriod = true;
+      if (selectedDate) {
+        matchPeriod = rowDate === selectedDate;
+      } else if (activePeriod === "day") {
+        matchPeriod = rowDate === todayStr;
+      } else if (activePeriod === "week") {
+        matchPeriod = rowDate >= week.start && rowDate <= week.end;
+      } else if (activePeriod === "month") {
+        matchPeriod = rowDate.startsWith(currentMonthStr) || rowMonth === currentMonthStr;
+      }
 
-      const isVisible = matchDate && matchTime;
-
+      const isVisible = matchPeriod;
       row.style.display = isVisible ? "" : "none";
 
       if (isVisible) {
@@ -280,24 +402,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Empty state row
     if (noBookingsRow) {
       noBookingsRow.style.display = visibleCount === 0 ? "table-row" : "none";
     }
 
-    // Subtitle counter
     if (bookingCount) {
       bookingCount.textContent = `Showing ${visibleCount} of ${rows.length} bookings`;
     }
 
-    // Clear filter button state
     if (resetFilterButton) {
       resetFilterButton.disabled = !hasFilter;
     }
 
-    // 2. DYNAMICALLY UPDATE THE THREE STAT CONTAINERS
+    // Update the Two Stat Containers
     if (hasFilter) {
-      // Container 1: Total bookings
       if (statTotalBookings) {
         statTotalBookings.textContent = visibleCount;
       }
@@ -305,13 +423,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (visibleCount === 0) {
           statFootBookings.textContent = "No matches";
         } else if (visibleCount === 1) {
-          statFootBookings.textContent = "For selected filter";
+          statFootBookings.textContent = "1 reservation";
         } else {
           statFootBookings.textContent = `${visibleCount} reservations`;
         }
       }
 
-      // Container 2: Rooms occupied
       const occupiedCount = matchingOccupiedRooms.size;
       if (statOccupiedRooms) {
         statOccupiedRooms.textContent = occupiedCount;
@@ -319,18 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (statFootOccupied) {
         statFootOccupied.textContent = `${occupiedCount} of ${TOTAL_ROOMS} rooms`;
       }
-
-      // Container 3: Available rooms
-      const availableCount = Math.max(0, TOTAL_ROOMS - occupiedCount);
-      if (statAvailableRooms) {
-        statAvailableRooms.textContent = availableCount;
-      }
-      if (statFootAvailable) {
-        statFootAvailable.textContent =
-          availableCount === TOTAL_ROOMS ? "All 8 rooms free" : `${availableCount} rooms available`;
-      }
     } else {
-      // Default view when no filter is applied
       if (statTotalBookings) {
         statTotalBookings.textContent = rows.length;
       }
@@ -345,45 +451,58 @@ document.addEventListener("DOMContentLoaded", () => {
       if (statFootOccupied) {
         statFootOccupied.textContent = "of 8 rooms";
       }
-
-      const availableCount = Math.max(0, TOTAL_ROOMS - occupiedCount);
-      if (statAvailableRooms) {
-        statAvailableRooms.textContent = availableCount;
-      }
-      if (statFootAvailable) {
-        statFootAvailable.textContent = "Right now";
-      }
     }
   };
 
-  // Event handlers: Date filter loads newly booked and recalculates containers
+  // Period chip handlers (All, Day, Week, Month)
+  periodChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      periodChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activePeriod = chip.dataset.period || "all";
+
+      if (dateFilter) {
+        dateFilter.value = "";
+      }
+
+      loadStoredBookings();
+      applyFilters();
+    });
+  });
+
+  // Date filter handler
   if (dateFilter) {
-    const handleDateInteraction = () => {
+    const handleDateInput = () => {
+      if (dateFilter.value) {
+        periodChips.forEach((c) => c.classList.remove("active"));
+        activePeriod = "custom";
+      } else {
+        const allChip = periodChips.find((c) => c.dataset.period === "all");
+        if (allChip) allChip.classList.add("active");
+        activePeriod = "all";
+      }
       loadStoredBookings();
       applyFilters();
     };
 
-    dateFilter.addEventListener("click", handleDateInteraction);
-    dateFilter.addEventListener("focus", handleDateInteraction);
-    dateFilter.addEventListener("change", handleDateInteraction);
-    dateFilter.addEventListener("input", handleDateInteraction);
-  }
-
-  // Event handlers: Time filter
-  if (timeFilter) {
-    const handleTimeInteraction = () => {
+    dateFilter.addEventListener("change", handleDateInput);
+    dateFilter.addEventListener("input", handleDateInput);
+    dateFilter.addEventListener("focus", () => {
       loadStoredBookings();
-      applyFilters();
-    };
-
-    timeFilter.addEventListener("change", handleTimeInteraction);
-    timeFilter.addEventListener("input", handleTimeInteraction);
+    });
+    dateFilter.addEventListener("click", () => {
+      loadStoredBookings();
+    });
   }
 
   // Clear filters
   const resetFilters = () => {
     if (dateFilter) dateFilter.value = "";
-    if (timeFilter) timeFilter.value = "";
+    activePeriod = "all";
+    periodChips.forEach((c) => {
+      c.classList.toggle("active", c.dataset.period === "all");
+    });
+    loadStoredBookings();
     applyFilters();
   };
 
@@ -395,15 +514,99 @@ document.addEventListener("DOMContentLoaded", () => {
     emptyResetButton.addEventListener("click", resetFilters);
   }
 
-  // Initialize modal buttons on static rows
-  const initialButtons = Array.from(document.querySelectorAll(".booking-details-button"));
-  initialButtons.forEach((btn) => attachModalListener(btn));
+  // Save changes from modal
+  if (btnModalSave) {
+    btnModalSave.addEventListener("click", () => {
+      if (!currentActiveRow) return;
 
-  if (closeModalButton) {
-    closeModalButton.addEventListener("click", () => {
-      if (bookingModal) bookingModal.close();
+      const newTitle = editModalTitle ? editModalTitle.value.trim() : "";
+      const newPax = editModalPax ? parseInt(editModalPax.value, 10) || 1 : 1;
+      const newSetup = editModalSetup ? editModalSetup.value : "Not Applicable";
+      const newFood = editModalFood ? editModalFood.value.trim() : "";
+      const newInstructions = editModalInstructions ? editModalInstructions.value.trim() : "";
+
+      if (!newTitle) {
+        showToast("Please enter a meeting title.", true);
+        return;
+      }
+
+      // Update DOM row
+      currentActiveRow.dataset.title = newTitle;
+      currentActiveRow.dataset.pax = String(newPax);
+      currentActiveRow.dataset.roomSetup = newSetup;
+      currentActiveRow.dataset.foodCoffee = newFood;
+      currentActiveRow.dataset.additionalInstructions = newInstructions;
+
+      if (currentActiveRow.children[1]) {
+        currentActiveRow.children[1].textContent = newTitle;
+      }
+      if (currentActiveRow.children[4]) {
+        currentActiveRow.children[4].textContent = String(newPax);
+      }
+
+      // Update storage
+      const bookingId = currentActiveRow.dataset.bookingId || "";
+      updateBookingInStorage(bookingId, {
+        meetingTitle: newTitle,
+        title: newTitle,
+        participants: String(newPax),
+        roomSetup: newSetup,
+        foodPreparation: newFood,
+        foodCoffee: newFood,
+        additionalInstructions: newInstructions,
+      });
+
+      showToast("Changes saved successfully!");
+      setTimeout(() => {
+        if (bookingModal) bookingModal.close();
+      }, 700);
     });
   }
+
+  // Cancel booking from modal
+  if (btnModalCancel) {
+    btnModalCancel.addEventListener("click", () => {
+      if (!currentActiveRow) return;
+
+      const isAlreadyCancelled = (currentActiveRow.dataset.status || "").toLowerCase() === "cancelled";
+      if (isAlreadyCancelled) return;
+
+      const confirmed = window.confirm("Are you sure you want to cancel this booking?");
+      if (!confirmed) return;
+
+      // Update row
+      currentActiveRow.dataset.status = "cancelled";
+      const pill = currentActiveRow.querySelector(".status-pill");
+      if (pill) {
+        pill.className = "status-pill status-cancelled";
+        pill.textContent = "Cancelled";
+      }
+
+      // Update modal view
+      if (modalStatusPill) {
+        modalStatusPill.className = "status-pill status-cancelled";
+        modalStatusPill.textContent = "Cancelled";
+      }
+      btnModalCancel.disabled = true;
+      btnModalCancel.textContent = "Booking cancelled";
+
+      // Persist cancellation
+      const bookingId = currentActiveRow.dataset.bookingId || "";
+      updateBookingInStorage(bookingId, { status: "Cancelled" });
+
+      showToast("Booking has been cancelled.");
+
+      // Refresh filter & occupied stats count
+      applyFilters();
+    });
+  }
+
+  // Close modal handlers
+  closeModalButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (bookingModal) bookingModal.close();
+    });
+  });
 
   if (bookingModal) {
     bookingModal.addEventListener("click", (event) => {
@@ -413,20 +616,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Cross-tab and window sync: reload newly booked reservations
+  // Initial bindings for static rows
+  const initialButtons = Array.from(document.querySelectorAll(".booking-details-button"));
+  initialButtons.forEach((btn) => attachModalListener(btn));
+
+  // Sync across tabs & windows
   window.addEventListener("storage", (event) => {
-    if (event.key === "rafiBookings") {
+    if (event.key === STORAGE_KEY_BOOKINGS || event.key === STORAGE_KEY_MODS) {
       loadStoredBookings();
+      applySavedModificationsToStaticRows();
       applyFilters();
     }
   });
 
   window.addEventListener("focus", () => {
     loadStoredBookings();
+    applySavedModificationsToStaticRows();
     applyFilters();
   });
 
-  // Initial load on page ready
+  // Run initial setup
+  applySavedModificationsToStaticRows();
   loadStoredBookings();
   applyFilters();
 });

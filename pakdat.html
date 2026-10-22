@@ -30,8 +30,17 @@
                 <input id="booking-date-filter" type="date" aria-label="Filter bookings by date" />
               </label>
 
-            
-              <button id="booking-reset-filter" class="btn-clear-overview" type="button" aria-label="Clear date and time filter" disabled>
+              <div class="period-filter-group" role="group" aria-label="Filter by day, week, month">
+                <span class="period-filter-label">Filter by period</span>
+                <div class="period-chips">
+                  <button type="button" class="period-chip active" data-period="all">All</button>
+                  <button type="button" class="period-chip" data-period="day">Day</button>
+                  <button type="button" class="period-chip" data-period="week">Week</button>
+                  <button type="button" class="period-chip" data-period="month">Month</button>
+                </div>
+              </div>
+
+              <button id="booking-reset-filter" class="btn-clear-overview" type="button" aria-label="Clear date and period filter" disabled>
                 Clear filter
               </button>
             </div>
@@ -60,17 +69,6 @@
             </div>
             <div class="stat-foot" id="stat-foot-occupied">of 8 rooms</div>
           </article>
-
-          <article class="stat-card">
-            <div class="stat-icon icon-available" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2zm0 4h10M8 1.8v3m8-3v3M7 9.5h10"/></svg>
-            </div>
-            <div class="stat-copy">
-              <div class="stat-label">Available rooms</div>
-              <div class="stat-value" id="stat-available-rooms">5</div>
-            </div>
-            <div class="stat-foot" id="stat-foot-available">Right now</div>
-          </article>
         </section>
 
         <section class="booking-panel" aria-label="Booking list">
@@ -89,13 +87,14 @@
                   <th>Meeting title</th>
                   <th>Room</th>
                   <th>Date</th>
-                  <th>Participants</th>
+                  <th>Pax</th>
                   <th>Status</th>
-                  <th>Request details</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="bookings-tbody">
                 <tr
+                  data-booking-id="static-1"
                   data-booking-date="2026-10-05"
                   data-booking-month="2026-10"
                   data-booking-time="9:00 AM - 10:00 AM"
@@ -103,6 +102,7 @@
                   data-status="booked"
                   data-employee="Maya Chen"
                   data-title="Budget Planning"
+                  data-pax="6"
                   data-room-setup="Boardroom layout with 10 seats"
                   data-additional-instructions="Check audio equipment"
                   data-food-coffee="Coffee for 6"
@@ -122,6 +122,7 @@
                 </tr>
 
                 <tr
+                  data-booking-id="static-2"
                   data-booking-date="2026-10-07"
                   data-booking-month="2026-10"
                   data-booking-time="10:00 AM - 11:00 AM"
@@ -129,6 +130,7 @@
                   data-status="booked"
                   data-employee="Jordan Lee"
                   data-title="System Design Review"
+                  data-pax="4"
                   data-room-setup="Classroom type without table"
                   data-additional-instructions="Whiteboard markers needed"
                   data-food-coffee="Water and mints"
@@ -148,6 +150,7 @@
                 </tr>
 
                 <tr
+                  data-booking-id="static-3"
                   data-booking-date="2026-10-12"
                   data-booking-month="2026-10"
                   data-booking-time="2:00 PM - 3:00 PM"
@@ -155,6 +158,7 @@
                   data-status="cancelled"
                   data-employee="Alex Rivera"
                   data-title="Product Planning Meeting"
+                  data-pax="9"
                   data-room-setup="U-shape"
                   data-additional-instructions="Conference phone setup"
                   data-food-coffee="Not provided"
@@ -174,6 +178,7 @@
                 </tr>
 
                 <tr
+                  data-booking-id="static-4"
                   data-booking-date="2026-10-12"
                   data-booking-month="2026-10"
                   data-booking-time="10:00 AM - 11:00 AM"
@@ -181,6 +186,7 @@
                   data-status="cancelled"
                   data-employee="Sam Wilson"
                   data-title="Team Standup"
+                  data-pax="3"
                   data-room-setup="Standard layout"
                   data-additional-instructions="TV screen connection"
                   data-food-coffee="Not provided"
@@ -200,6 +206,7 @@
                 </tr>
 
                 <tr
+                  data-booking-id="static-5"
                   data-booking-date="2026-10-17"
                   data-booking-month="2026-10"
                   data-booking-time="10:00 AM - 11:00 AM"
@@ -207,6 +214,7 @@
                   data-status="booked"
                   data-employee="User submission"
                   data-title="MEETING"
+                  data-pax="6"
                   data-room-setup="Not Applicable"
                   data-additional-instructions="mag pa on me sa aircon"
                   data-food-coffee="need coffee and food"
@@ -232,7 +240,7 @@
                         <svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
                       </div>
                       <p class="empty-title">No bookings match your filters</p>
-                      <p class="empty-desc">Try clearing your filters or selecting another date or time.</p>
+                      <p class="empty-desc">Try clearing your filters or selecting another date or period.</p>
                       <button class="empty-clear-link" id="empty-reset-btn" type="button">Clear filter</button>
                     </div>
                   </td>
@@ -249,17 +257,78 @@
         <span class="confirmation-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="m5 12.5 4.5 4.5L19 6" /></svg>
         </span>
-        <h2 id="booking-modal-title">Booking Details</h2>
-        <p>Here are the details of your meeting room reservation.</p>
+        <h2 id="booking-modal-title">Reservation Details</h2>
+        <p class="modal-subtitle-text">View or modify employee reservation details below.</p>
       </header>
-      <dl class="booking-summary">
-        <div><dt>Room Setup</dt><dd id="detail-room-setup">Not Applicable</dd></div>
-        <div><dt>Additional instructions</dt><dd id="detail-instructions"></dd></div>
-        <div><dt>Food/coffee preparation</dt><dd id="detail-food-coffee"></dd></div>
-      </dl>
-      <div class="modal-actions">
-        <button class="modal-close" type="button">Close</button>
+
+      <div class="modal-meta-card">
+        <div class="modal-meta-row">
+          <span class="modal-meta-label">Employee</span>
+          <span class="modal-meta-value" id="modal-employee">—</span>
+        </div>
+        <div class="modal-meta-row">
+          <span class="modal-meta-label">Room &amp; Floor</span>
+          <span class="modal-meta-value" id="modal-room">—</span>
+        </div>
+        <div class="modal-meta-row">
+          <span class="modal-meta-label">Date &amp; Time</span>
+          <span class="modal-meta-value" id="modal-datetime">—</span>
+        </div>
+        <div class="modal-meta-row">
+          <span class="modal-meta-label">Status</span>
+          <span class="modal-meta-value">
+            <span class="status-pill status-booked" id="modal-status-pill">Booked</span>
+          </span>
+        </div>
       </div>
+
+      <form id="booking-edit-form" class="modal-edit-form" onsubmit="return false;">
+        <div class="modal-field-group">
+          <label for="edit-modal-title">Meeting title</label>
+          <input type="text" id="edit-modal-title" class="modal-input" placeholder="e.g. Budget Planning" required />
+        </div>
+
+        <div class="modal-field-row">
+          <div class="modal-field-group">
+            <label for="edit-modal-pax">Pax (Participants)</label>
+            <input type="number" id="edit-modal-pax" class="modal-input" min="1" max="100" placeholder="e.g. 6" required />
+          </div>
+
+          <div class="modal-field-group">
+            <label for="edit-modal-setup">Room setup</label>
+            <select id="edit-modal-setup" class="modal-select">
+              <option value="Boardroom layout with 10 seats">Boardroom layout with 10 seats</option>
+              <option value="Classroom type without table">Classroom type without table</option>
+              <option value="U-shape">U-shape</option>
+              <option value="Standard layout">Standard layout</option>
+              <option value="Not Applicable">Not Applicable</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-field-group">
+          <label for="edit-modal-food">Food / coffee preparation</label>
+          <input type="text" id="edit-modal-food" class="modal-input" placeholder="e.g. Coffee for 6, water and mints" />
+        </div>
+
+        <div class="modal-field-group">
+          <label for="edit-modal-instructions">Additional instructions</label>
+          <textarea id="edit-modal-instructions" class="modal-textarea" rows="2" placeholder="e.g. Check audio equipment, whiteboard markers"></textarea>
+        </div>
+
+        <div id="modal-toast" class="modal-toast" style="display: none;"></div>
+
+        <div class="modal-actions-bar">
+          <button type="button" class="btn-cancel-reservation" id="btn-modal-cancel">
+            Cancel booking
+          </button>
+          
+          <div class="modal-right-actions">
+            <button type="button" class="btn-modal-ghost modal-close">Close</button>
+            <button type="button" class="btn-modal-save" id="btn-modal-save">Save changes</button>
+          </div>
+        </div>
+      </form>
     </dialog>
 
     <script src="villadolid.js"></script>

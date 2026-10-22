@@ -94,7 +94,7 @@ h1 {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 30px;
 }
@@ -262,6 +262,56 @@ h1 {
   background: #ffffff;
   border-color: var(--steel-blue);
   box-shadow: 0 0 0 3px rgba(116, 156, 182, 0.22);
+}
+
+.period-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.period-filter-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-strong);
+  letter-spacing: 0.02em;
+}
+
+.period-chips {
+  display: inline-flex;
+  align-items: center;
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+.period-chip {
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.period-chip:hover:not(.active) {
+  background: var(--panel-alt);
+  color: var(--heading-deep);
+}
+
+.period-chip.active {
+  background: var(--blue-strong);
+  color: var(--white);
+  box-shadow: 0 1px 3px rgba(45, 70, 88, 0.16);
 }
 
 .btn-clear-overview {
@@ -540,68 +590,186 @@ tbody tr:last-child td {
   font-size: 28px;
 }
 
-.modal-heading p {
+.modal-subtitle-text {
   margin: 2px 0 18px;
   color: var(--text);
-  font-size: 20px;
+  font-size: 16px;
 }
 
-.booking-summary {
+.modal-meta-card {
   display: grid;
-  margin: 0 0 26px;
-  padding: 18px 20px;
-  border-radius: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
   background: var(--panel-alt);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
 }
 
-.booking-summary div {
-  display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.2fr);
-  min-width: 0;
-  align-items: start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line);
+.modal-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.booking-summary div:last-child {
-  border-bottom: 0;
-}
-
-.booking-summary dt,
-.booking-summary dd {
-  min-width: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.booking-summary dt {
+.modal-meta-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--muted);
 }
 
-.booking-summary dd {
-  margin: 0;
+.modal-meta-value {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--heading-deep);
-  font-weight: 700;
-  text-align: right;
-  white-space: pre-wrap;
 }
 
-.modal-actions {
+.modal-edit-form {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.modal-close {
-  min-width: 128px;
-  padding: 11px 18px;
-  border: 0;
+.modal-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.modal-field-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--heading-deep);
+}
+
+.modal-field-row {
+  display: flex;
+  gap: 14px;
+}
+
+.modal-input,
+.modal-select,
+.modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
   border-radius: 8px;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--heading-deep);
+  background: var(--white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modal-textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.modal-input:focus,
+.modal-select:focus,
+.modal-textarea:focus {
+  outline: none;
+  border-color: var(--steel-blue);
+  box-shadow: 0 0 0 3px rgba(116, 156, 182, 0.22);
+}
+
+.modal-toast {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  background: #eef7ee;
+  color: #276738;
+  border: 1px solid #c2e2c8;
+}
+
+.modal-toast.error {
+  background: #fff4f4;
+  color: #b3261e;
+  border-color: #f2b4b4;
+}
+
+.modal-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+
+.modal-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-cancel-reservation {
+  border: 1px solid #f2b4b4;
+  background: #fff4f4;
+  color: #b3261e;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel-reservation:hover:not(:disabled) {
+  background: #ffe3e3;
+  border-color: #e57373;
+}
+
+.btn-cancel-reservation:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f7f7f7;
+  border-color: #ddd;
+  color: #999;
+}
+
+.btn-modal-ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-ghost:hover {
+  background: var(--panel-alt);
+  color: var(--heading-deep);
+}
+
+.btn-modal-save {
+  border: none;
   background: var(--saffron-yellow);
   color: var(--heading-deep);
-  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-modal-save:hover {
+  background: #e8a80d;
 }
 
 @media (max-width: 980px) {
@@ -636,8 +804,46 @@ tbody tr:last-child td {
     min-width: 0;
   }
 
+  .period-chips {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .period-chip {
+    flex: 1;
+    padding: 0 8px;
+    text-align: center;
+  }
+
   .btn-clear-overview {
     width: 100%;
+  }
+
+  .modal-meta-card {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-field-row {
+    flex-direction: column;
+  }
+
+  .modal-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-cancel-reservation {
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal-right-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modal-right-actions button {
+    flex: 1;
   }
 
   thead {
@@ -675,18 +881,5 @@ tbody tr:last-child td {
 
   .modal-heading p {
     font-size: 17px;
-  }
-
-  .booking-summary {
-    padding: 12px 14px;
-  }
-
-  .booking-summary div {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .booking-summary dd {
-    text-align: left;
   }
 }
