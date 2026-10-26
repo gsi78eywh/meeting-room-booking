@@ -40,7 +40,7 @@
       <section id="bookingPage" class="layout">
         <section class="card booking-card">
           <div class="section">
-            <div class="section-head"><div class="num">1</div><div><h2>Meeting Details</h2><p>Choose a meeting date and add a title.</p></div></div>
+            <div class="section-head"><div class="num">1</div><div><h2>Meeting Details</h2><p>Choose a meeting date, add a title, and enter the number of attendees.</p></div></div>
             <div class="meeting-fields">
               <div>
                 <label class="meeting-title-field" for="date">Meeting Date</label>
@@ -48,7 +48,11 @@
               </div>
               <div>
                 <label class="meeting-title-field" for="meetingTitle">Meeting Title</label>
-                <input id="meetingTitle" class="date-input" type="text" maxlength="100" placeholder="Enter a title for your meeting" />
+                <input id="meetingTitle" class="date-input" type="text" maxlength="50" placeholder="Enter a title for your meeting" />
+              </div>
+              <div>
+                <label class="meeting-title-field" for="pax">Pax:</label>
+                <input id="pax" class="date-input" type="number" min="1" step="1" placeholder="e.g. 5" />
               </div>
             </div>
           </div>
@@ -66,6 +70,19 @@
             <div class="section-head"><div class="num">3</div><div><h2>Meeting Time & Available Rooms</h2><p>Select a time range and review room bookings for the meeting date.</p></div></div>
             <div class="room-calendar-heading"><h3>Available Rooms</h3><p id="roomHelp">Select a room capacity to show matching rooms.</p></div>
             <div id="roomList" class="room-list" aria-live="polite"></div>
+            <div id="roomApprovalAlert" class="room-approval-alert" hidden>
+              <div class="alert-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div class="alert-content">
+                <strong>Admin Approval Required</strong>
+                <p>Bookings for the <strong>5th Floor JRA Boardroom</strong> require approval from the admin before confirmation. Your reservation will be submitted as <strong class="status-highlight">For Approval</strong>.</p>
+              </div>
+            </div>
             <div class="time-range-picker">
               <div class="time-range-field">
                 <label class="meeting-title-field" for="startTime">Start Time</label>
@@ -84,16 +101,54 @@
 
           <div class="section">
             <div class="section-head"><div class="num">4</div><div><h2>Room Setup and Preparation</h2><p>Share any setup or preparation requests.</p></div></div>
-            <label class="meeting-title-field" for="roomSetup">Room Setup <span>(Required)</span></label>
-            <select id="roomSetup" class="date-input">
-              <option value="">Select an option</option>
-              <option>Not Applicable</option><option>Classroom type without table</option>
-              <option>Classroom type with table</option><option>O-shape (chairs only)</option><option>U-shape</option>
-            </select>
+            <div id="roomSetupGroup" hidden>
+              <label class="meeting-title-field" for="roomSetup">Room Setup <span>(Required)</span></label>
+              <select id="roomSetup" class="date-input">
+                <option value="">Select an option</option>
+                <option>Not Applicable</option><option>Classroom type without table</option>
+                <option>Classroom type with table</option><option>O-shape (chairs only)</option><option>U-shape</option>
+              </select>
+            </div>
             <label class="meeting-title-field" for="additionalInstructions">Additional instructions <span>(Optional)</span></label>
             <textarea id="additionalInstructions" class="form-textarea" maxlength="1000" placeholder="Add any additional instructions"></textarea>
-            <label class="meeting-title-field" for="foodPreparation">Food/coffee preparation <span>(Optional)</span></label>
-            <textarea id="foodPreparation" class="form-textarea" maxlength="1000" placeholder="Describe any food or coffee preparation needed"></textarea>
+            <label class="meeting-title-field">Coffee:</label>
+            <div class="coffee-options" role="radiogroup" aria-label="Coffee selection">
+              <label class="radio-option">
+                <input type="radio" name="coffee" value="Coffee" />
+                <span>Coffee</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="coffee" value="Without Coffee" />
+                <span>Without Coffee</span>
+              </label>
+            </div>
+            <label class="meeting-title-field" for="food">Food:</label>
+            <input id="food" class="date-input" type="text" placeholder="Enter food needed" />
+          </div>
+
+          <div class="section" id="visitorSetupSection">
+            <div class="section-head"><div class="num">5</div><div><h2>Visitor Set Up</h2><p>Share any visitor details and attendees.</p></div></div>
+            <label class="meeting-title-field">External:</label>
+            <div class="external-options">
+              <label class="radio-option">
+                <input type="radio" name="external" id="external" value="External" />
+                <span>External Visitor</span>
+              </label>
+            </div>
+            <textarea id="visitors" class="form-textarea visitors-textarea" rows="4" placeholder="List of Visitor's Name"></textarea>
+            <div id="externalApprovalAlert" class="room-approval-alert" hidden>
+              <div class="alert-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div class="alert-content">
+                <strong>Admin Approval Required</strong>
+                <p>External meetings require approval from the administrator. Your reservation will be submitted as <strong class="status-highlight">For Approval</strong>.</p>
+              </div>
+            </div>
           </div>
 
           <div class="action"><button id="bookButton" class="book-btn" type="button">Book Now</button></div>
@@ -109,12 +164,16 @@
           <div class="summary-body">
             <div class="sum-row" data-summary="date"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Date</span><strong>Not selected</strong></div></div>
             <div class="sum-row meeting-title-summary" data-summary="meetingTitle"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Title</span><strong>Not selected</strong></div></div>
+            <div class="sum-row" data-summary="pax"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Pax</span><strong>Not provided</strong></div></div>
             <div class="sum-row" data-summary="participants"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Room Capacity Filter</span><strong>Not selected</strong></div></div>
             <div class="sum-row" data-summary="room"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Room</span><strong>Not selected</strong></div></div>
             <div class="sum-row" data-summary="meetingTime"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Meeting Time</span><strong>Not selected</strong></div></div>
-            <div class="sum-row roomSetup-summary" data-summary="roomSetup"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Room Setup</span><strong>Not selected</strong></div></div>
+            <div class="sum-row roomSetup-summary" data-summary="roomSetup" hidden><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Room Setup</span><strong>Not selected</strong></div></div>
             <div class="sum-row additionalInstructions-summary" data-summary="additionalInstructions"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Additional instructions</span><strong>Not provided</strong></div></div>
-            <div class="sum-row foodPreparation-summary" data-summary="foodPreparation"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Food/coffee preparation</span><strong>Not provided</strong></div></div>
+            <div class="sum-row coffee-summary" data-summary="coffee"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Coffee</span><strong>Not selected</strong></div></div>
+            <div class="sum-row food-summary" data-summary="food"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Food</span><strong>Not provided</strong></div></div>
+            <div class="sum-row external-summary" data-summary="external"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>External</span><strong>No</strong></div></div>
+            <div class="sum-row visitors-summary" data-summary="visitors"><span class="sum-check" aria-label="Incomplete"></span><div class="sum-content"><span>Visitors</span><strong>Not provided</strong></div></div>
             <div class="divider"></div>
             <div class="status"><span>Status</span><div id="statusBadge" class="status-badge">Draft</div></div>
           </div>
@@ -138,5 +197,3 @@
 
 </body>
 </html>
-
-

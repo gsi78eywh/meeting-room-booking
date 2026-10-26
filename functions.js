@@ -129,9 +129,14 @@ const legacyTimes = [
 const state = {
   date: "",
   meetingTitle: "",
-  roomSetup: "",
+  pax: "",
+  roomSetup: "Not Applicable",
   additionalInstructions: "",
+  coffee: "",
+  food: "",
   foodPreparation: "",
+  external: "",
+  visitors: "",
   participants: null,
   room: null,
   start: null,
@@ -221,6 +226,32 @@ function esc(value) {
 }
 
 
+function formatFoodPreparation(coffee, food) {
+  const parts = [];
+  if (coffee) parts.push(coffee);
+  if (food && food.trim()) parts.push(`Food: ${food.trim()}`);
+  return parts.join(", ");
+}
+
+function isReaRoom(room) {
+  if (!room) return false;
+  if (room.id === 7) return true;
+  if (typeof room.name === "string" && /REA/i.test(room.name)) return true;
+  return false;
+}
+
+function isJraRoom(room) {
+  if (!room) return false;
+  if (room.id === 8) return true;
+  if (typeof room.name === "string" && /JRA/i.test(room.name)) return true;
+  return false;
+}
+
+function requiresApproval() {
+  return isJraRoom(state.room) || state.external === "External";
+}
+
+
 /* =========================================
    INITIAL APP
 ========================================= */
@@ -247,6 +278,14 @@ function bindEvents() {
     updateSummary();
   });
 
+  const paxInput = document.getElementById("pax");
+  if (paxInput) {
+    paxInput.addEventListener("input", event => {
+      state.pax = event.target.value;
+      updateSummary();
+    });
+  }
+
   document.getElementById("participants").addEventListener("change", event => {
     selectParticipants(event.target.value);
   });
@@ -268,8 +307,10 @@ function bindEvents() {
     renderBooking();
   });
 
-  ["roomSetup", "additionalInstructions", "foodPreparation"].forEach(field => {
-    document.getElementById(field).addEventListener(
+  ["roomSetup", "additionalInstructions"].forEach(field => {
+    const el = document.getElementById(field);
+    if (!el) return;
+    el.addEventListener(
       field === "roomSetup" ? "change" : "input",
       event => {
         state[field] = event.target.value;
@@ -277,6 +318,45 @@ function bindEvents() {
       }
     );
   });
+
+  document.querySelectorAll("input[name='coffee']").forEach(radio => {
+    radio.addEventListener("change", event => {
+      state.coffee = event.target.value;
+      state.foodPreparation = formatFoodPreparation(state.coffee, state.food);
+      updateSummary();
+    });
+  });
+
+  const foodInput = document.getElementById("food");
+  if (foodInput) {
+    foodInput.addEventListener("input", event => {
+      state.food = event.target.value;
+      state.foodPreparation = formatFoodPreparation(state.coffee, state.food);
+      updateSummary();
+    });
+  }
+
+  const externalRadio = document.getElementById("external");
+  if (externalRadio) {
+    externalRadio.addEventListener("click", function () {
+      if (state.external === "External") {
+        this.checked = false;
+        state.external = "";
+      } else {
+        state.external = "External";
+        this.checked = true;
+      }
+      renderBooking();
+    });
+  }
+
+  const visitorsInput = document.getElementById("visitors");
+  if (visitorsInput) {
+    visitorsInput.addEventListener("input", event => {
+      state.visitors = event.target.value;
+      updateSummary();
+    });
+  }
 
   document.getElementById("historyDate").addEventListener("change", event => {
     state.historyDate = event.target.value;
@@ -362,12 +442,51 @@ function renderBooking() {
   dateInput.min = today;
   dateInput.value = state.date;
   document.getElementById("meetingTitle").value = state.meetingTitle;
+  const paxEl = document.getElementById("pax");
+  if (paxEl) paxEl.value = state.pax;
   document.getElementById("participants").value = state.participants ?? "";
   document.getElementById("startTime").value = state.startTime;
   document.getElementById("endTime").value = state.endTime;
-  document.getElementById("roomSetup").value = state.roomSetup;
+  const isRea = isReaRoom(state.room);
+  const roomSetupGroup = document.getElementById("roomSetupGroup");
+  if (roomSetupGroup) {
+    roomSetupGroup.hidden = !isRea;
+  }
+  const roomSetupEl = document.getElementById("roomSetup");
+  if (roomSetupEl) {
+    roomSetupEl.value = isRea ? state.roomSetup : "";
+  }
   document.getElementById("additionalInstructions").value = state.additionalInstructions;
-  document.getElementById("foodPreparation").value = state.foodPreparation;
+  document.querySelectorAll("input[name='coffee']").forEach(radio => {
+    radio.checked = radio.value === state.coffee;
+  });
+  const foodEl = document.getElementById("food");
+  if (foodEl) foodEl.value = state.food;
+
+  const externalRadio = document.getElementById("external");
+  if (externalRadio) {
+    externalRadio.checked = state.external === "External";
+  }
+  const externalAlert = document.getElementById("externalApprovalAlert");
+  if (externalAlert) {
+    externalAlert.hidden = state.external !== "External";
+  }
+  const visitorsEl = document.getElementById("visitors");
+  if (visitorsEl) {
+    visitorsEl.value = state.visitors;
+  }
+
+  const needsApproval = requiresApproval();
+  const isJra = isJraRoom(state.room);
+  const roomApprovalAlert = document.getElementById("roomApprovalAlert");
+  if (roomApprovalAlert) {
+    roomApprovalAlert.hidden = !isJra;
+  }
+  const bookButton = document.getElementById("bookButton");
+  if (bookButton) {
+    bookButton.textContent = needsApproval ? "Submit for Approval" : "Book Now";
+  }
+
   renderTimeOptions();
 
   document.getElementById("roomHelp").textContent = Number.isInteger(state.participants)
@@ -380,15 +499,32 @@ function renderBooking() {
 }
 
 function updateSummary() {
+  const isRea = isReaRoom(state.room);
+  const needsApproval = requiresApproval();
+
+  const roomSetupRow = document.querySelector(".roomSetup-summary");
+  if (roomSetupRow) {
+    roomSetupRow.hidden = !isRea;
+  }
+
+  const isRoomSetupComplete = isRea
+    ? Boolean(state.roomSetup.trim() && state.roomSetup !== "Select an option" && state.roomSetup !== "Not Applicable")
+    : true;
+
   const summary = {
     date: [fmtDate(state.date), Boolean(state.date)],
     meetingTitle: [state.meetingTitle.trim() || "Not selected", Boolean(state.meetingTitle.trim())],
+    pax: [state.pax || "Not provided", Boolean(state.pax)],
     participants: [state.participants === null ? "Not selected" : state.participants === "All" ? "Browsing all room capacities" : `${state.participants} people`, Number.isInteger(state.participants)],
     room: [state.room?.name || "Not selected", Boolean(state.room)],
     meetingTime: [state.meetingTime || "Not selected", Boolean(selectedTimeRange())],
-    roomSetup: [state.roomSetup.trim() || "Not provided", Boolean(state.roomSetup.trim())],
+    roomSetup: [isRea ? (state.roomSetup.trim() || "Not selected") : "Not Applicable", isRoomSetupComplete],
     additionalInstructions: [state.additionalInstructions.trim() || "Not provided", Boolean(state.additionalInstructions.trim())],
-    foodPreparation: [state.foodPreparation.trim() || "Not provided", Boolean(state.foodPreparation.trim())]
+    coffee: [state.coffee || "Not selected", Boolean(state.coffee)],
+    food: [state.food.trim() || "Not provided", Boolean(state.food.trim())],
+    foodPreparation: [formatFoodPreparation(state.coffee, state.food) || "Not provided", Boolean(state.coffee || state.food.trim())],
+    external: [state.external === "External" ? "Yes (For Approval)" : "No", true],
+    visitors: [state.visitors.trim() || "Not provided", Boolean(state.visitors.trim())]
   };
 
   Object.entries(summary).forEach(([key, [value, complete]]) => {
@@ -400,20 +536,41 @@ function updateSummary() {
     row.querySelector(".sum-check").setAttribute("aria-label", complete ? "Complete" : "Incomplete");
   });
 
-  const requiredCount = [
+  const totalRequired = isRea ? 8 : 7;
+  const requiredList = [
     Boolean(state.date),
     Boolean(state.meetingTitle.trim()),
     Number.isInteger(state.participants),
     Boolean(state.room),
     Boolean(selectedTimeRange()),
-    Boolean(state.roomSetup.trim()),
     Boolean(state.additionalInstructions.trim()),
-    Boolean(state.foodPreparation.trim())
-  ].filter(Boolean).length;
-  document.getElementById("progressCount").textContent = `${requiredCount} of 8`;
-  document.getElementById("progressBar").style.width = `${requiredCount / 8 * 100}%`;
+    Boolean(state.coffee)
+  ];
+  if (isRea) {
+    requiredList.push(Boolean(state.roomSetup.trim() && state.roomSetup !== "Select an option" && state.roomSetup !== "Not Applicable"));
+  }
+
+  const requiredCount = requiredList.filter(Boolean).length;
+  document.getElementById("progressCount").textContent = `${requiredCount} of ${totalRequired}`;
+  document.getElementById("progressBar").style.width = `${(requiredCount / totalRequired) * 100}%`;
+  document.querySelector(".progress-track").setAttribute("aria-valuemax", totalRequired);
   document.querySelector(".progress-track").setAttribute("aria-valuenow", requiredCount);
-  document.getElementById("statusBadge").textContent = checklistComplete() ? "Ready to Book" : "Draft";
+
+  const statusBadge = document.getElementById("statusBadge");
+  if (statusBadge) {
+    if (checklistComplete()) {
+      statusBadge.textContent = needsApproval ? "For Approval" : "Ready to Book";
+      statusBadge.className = needsApproval ? "status-badge status-for-approval" : "status-badge status-ready";
+    } else {
+      statusBadge.textContent = "Draft";
+      statusBadge.className = "status-badge";
+    }
+  }
+
+  const bookButton = document.getElementById("bookButton");
+  if (bookButton) {
+    bookButton.textContent = needsApproval ? "Submit for Approval" : "Book Now";
+  }
 }
 
 
@@ -424,6 +581,7 @@ function updateSummary() {
 function resetAfterDate() {
 
   state.room = null;
+  state.roomSetup = "Not Applicable";
 
   state.start = null;
 
@@ -456,10 +614,11 @@ function renderRoomCalendar() {
   }
 
   return matchingRooms.map(room => {
+    const isJra = isJraRoom(room);
     const totalBookings = state.date
       ? bookings.filter(booking =>
           booking.roomId === room.id &&
-          booking.status === "Confirmed" &&
+          (booking.status === "Confirmed" || booking.status === "For Approval") &&
           booking.date === state.date
         ).length
       : 0;
@@ -472,6 +631,7 @@ function renderRoomCalendar() {
         <strong>${room.name.replace(/\s*\(\d+\s*pax\)$/i, "")}</strong>
         <span>${room.capacity} people</span>
         ${state.date ? `<small>${totalBookings} booked that day</small>` : ""}
+        ${isJra ? `<span class="room-tag-approval">⚠️ Needs Admin Approval</span>` : ""}
         <span class="calendar-room-amenities">
           <span class="amenities-label">Has:</span>
           ${room.amenities.map(amenity => `<span class="room-amenity">${amenity}</span>`).join("")}
@@ -517,7 +677,7 @@ function roomTimeRangeIsAvailable(room, start, end) {
     if (
       booking.date !== state.date ||
       booking.roomId !== room.id ||
-      booking.status !== "Confirmed"
+      booking.status === "Cancelled"
     ) {
       return false;
     }
@@ -626,7 +786,7 @@ function roomHasAvailability(room) {
       booking =>
         booking.date === state.date &&
         booking.roomId === room.id &&
-        booking.status === "Confirmed"
+        (booking.status === "Confirmed" || booking.status === "For Approval")
     );
 
 
@@ -687,6 +847,7 @@ function selectParticipants(number) {
         : Number(number);
 
   state.room = null;
+  state.roomSetup = "Not Applicable";
 
   state.start = null;
 
@@ -709,10 +870,20 @@ function selectParticipants(number) {
 
 function selectRoom(id) {
 
+  const previousRoomWasRea = isReaRoom(state.room);
+
   state.room =
     rooms.find(
       room => room.id === id
     );
+
+  const nowRea = isReaRoom(state.room);
+
+  if (nowRea && !previousRoomWasRea) {
+    state.roomSetup = "";
+  } else if (!nowRea) {
+    state.roomSetup = "Not Applicable";
+  }
 
   state.start = null;
 
@@ -745,7 +916,7 @@ function isTimeUnavailable(start, end) {
       booking =>
         booking.date === state.date &&
         booking.roomId === state.room.id &&
-        booking.status === "Confirmed"
+        (booking.status === "Confirmed" || booking.status === "For Approval")
     );
 
 
@@ -857,6 +1028,8 @@ function formatDuration(hours, minutes) {
 
 function ready() {
 
+  const isRea = isReaRoom(state.room);
+
   return Boolean(
 
     state.date &&
@@ -869,11 +1042,11 @@ function ready() {
 
     selectedTimeRange() &&
 
-    state.roomSetup.trim() &&
+    (!isRea || (state.roomSetup.trim() && state.roomSetup !== "Select an option" && state.roomSetup !== "Not Applicable")) &&
 
     state.additionalInstructions.trim() &&
 
-    state.foodPreparation.trim()
+    state.coffee
 
   );
 
@@ -881,16 +1054,25 @@ function ready() {
 
 
 function incompleteChecklistItems() {
-  return [
+  const isRea = isReaRoom(state.room);
+  const items = [
     [Boolean(state.date), "Meeting Date"],
     [Boolean(state.meetingTitle.trim()), "Meeting Title"],
     [Number.isInteger(state.participants), "Room Capacity"],
     [Boolean(state.room), "Meeting Room"],
-    [Boolean(selectedTimeRange()), "Meeting Time"],
-    [Boolean(state.roomSetup.trim()), "Room Setup"],
+    [Boolean(selectedTimeRange()), "Meeting Time"]
+  ];
+
+  if (isRea) {
+    items.push([Boolean(state.roomSetup.trim() && state.roomSetup !== "Select an option" && state.roomSetup !== "Not Applicable"), "Room Setup"]);
+  }
+
+  items.push(
     [Boolean(state.additionalInstructions.trim()), "Additional Instructions"],
-    [Boolean(state.foodPreparation.trim()), "Food/coffee preparation"]
-  ]
+    [Boolean(state.coffee), "Coffee"]
+  );
+
+  return items
     .filter(([complete]) => !complete)
     .map(([, label]) => label);
 }
@@ -911,7 +1093,8 @@ function focusFirstIncompleteItem() {
     "Meeting Time": "#startTime",
     "Room Setup": "#roomSetup",
     "Additional Instructions": "#additionalInstructions",
-    "Food/coffee preparation": "#foodPreparation"
+    "Coffee": "input[name='coffee']",
+    "Food/coffee preparation": "input[name='coffee']"
   };
   const target = document.querySelector(selectors[firstIncomplete]);
 
@@ -1034,14 +1217,23 @@ function bookNow() {
         meetingTitle:
           state.meetingTitle.trim(),
 
+        pax:
+          state.pax,
+
         roomSetup:
-          state.roomSetup.trim(),
+          isReaRoom(state.room) ? (state.roomSetup.trim() || "Not Applicable") : "Not Applicable",
 
         additionalInstructions:
           state.additionalInstructions.trim(),
 
+        coffee:
+          state.coffee,
+
+        food:
+          state.food.trim(),
+
         foodPreparation:
-          state.foodPreparation.trim(),
+          formatFoodPreparation(state.coffee, state.food),
 
         date:
           state.date,
@@ -1070,8 +1262,14 @@ function bookNow() {
         timeIndexVersion:
           2,
 
+        external:
+          state.external === "External" ? "Yes" : "No",
+
+        visitors:
+          state.visitors.trim(),
+
         status:
-          "Confirmed",
+          requiresApproval() ? "For Approval" : "Confirmed",
 
         created:
           new Date().toISOString()
@@ -1087,23 +1285,28 @@ function bookNow() {
       save();
 
 
+      const needsApproval = requiresApproval();
+
       showModal(`
 
         <div class="center">
 
-          <div class="success">
-            ✓
+          <div class="${needsApproval ? "warning-icon" : "success"}">
+            ${needsApproval ? "⚠️" : "✓"}
           </div>
 
           <h2>
-            Booking Confirmed!
+            ${needsApproval ? "Submitted for Approval!" : "Booking Confirmed!"}
           </h2>
 
           <p>
-
-            Your meeting room has been
-            successfully reserved.
-
+            ${
+              needsApproval
+                ? isJraRoom(state.room)
+                  ? "Your reservation for 5th Floor JRA Boardroom has been submitted and is pending admin approval."
+                  : "Your external meeting reservation has been submitted and is pending admin approval."
+                : "Your meeting room has been successfully reserved."
+            }
           </p>
 
 
@@ -1187,15 +1390,18 @@ function detailHTML(booking) {
       )}
 
       ${detail(
+        "Status",
+        booking.status
+      )}
+
+      ${detail(
         "Date",
         fmtDate(booking.date)
       )}
 
       ${detail(
-        "Room Capacity Filter",
-        Array.isArray(booking.participants)
-          ? booking.participants.join(" or ") + " people"
-          : booking.participants + " People"
+        "Time",
+        booking.meetingTime || "Not specified"
       )}
 
       ${detail(
@@ -1209,6 +1415,18 @@ function detailHTML(booking) {
       )}
 
       ${detail(
+        "Pax",
+        booking.pax || "Not provided"
+      )}
+
+      ${detail(
+        "Room Capacity Filter",
+        Array.isArray(booking.participants)
+          ? booking.participants.join(" or ") + " people"
+          : booking.participants + " People"
+      )}
+
+      ${detail(
         "Room Setup",
         booking.roomSetup || "None provided"
       )}
@@ -1219,18 +1437,23 @@ function detailHTML(booking) {
       )}
 
       ${detail(
-        "Food/coffee preparation",
-        booking.foodPreparation || "None provided"
+        "Coffee",
+        booking.coffee || (!booking.food && booking.foodPreparation ? booking.foodPreparation : "Not specified")
       )}
 
       ${detail(
-        "Time",
-        booking.meetingTime || "Not specified"
+        "Food",
+        booking.food || "None provided"
       )}
 
       ${detail(
-        "Status",
-        booking.status
+        "External",
+        booking.external || "No"
+      )}
+
+      ${detail(
+        "List of Visitors",
+        booking.visitors || "None provided"
       )}
 
     </div>
@@ -1300,11 +1523,21 @@ function newBooking() {
 
   state.meetingTitle = "";
 
-  state.roomSetup = "";
+  state.pax = "";
+
+  state.roomSetup = "Not Applicable";
 
   state.additionalInstructions = "";
 
+  state.coffee = "";
+
+  state.food = "";
+
   state.foodPreparation = "";
+
+  state.external = "";
+
+  state.visitors = "";
 
   state.participants = null;
 
@@ -1382,6 +1615,11 @@ function historyCard(booking) {
           )}
 
           ${hist(
+            "Pax",
+            booking.pax || "Not provided"
+          )}
+
+          ${hist(
             "Time",
             booking.meetingTime || "Not specified"
           )}
@@ -1394,9 +1632,9 @@ function historyCard(booking) {
       <div class="history-actions">
 
         <span
-          class="history-status ${booking.status === "Cancelled" ? "cancelled" : "confirmed"}"
+          class="history-status ${booking.status === "Cancelled" ? "cancelled" : booking.status === "For Approval" ? "approval" : "confirmed"}"
         >
-          ${booking.status === "Cancelled" ? "Cancelled" : "Booked"}
+          ${booking.status === "Cancelled" ? "Cancelled" : booking.status === "For Approval" ? "For Approval" : "Booked"}
         </span>
 
         <div class="history-buttons">
@@ -1491,12 +1729,11 @@ function viewBooking(id) {
     <p>
 
       ${
-        booking.status ===
-        "Confirmed"
-
+        booking.status === "Confirmed"
           ? "Your reservation details are shown below."
-
-          : "This reservation is no longer active."
+          : booking.status === "For Approval"
+            ? "This reservation has been submitted and is pending admin approval."
+            : "This reservation is no longer active."
       }
 
     </p>
@@ -1508,7 +1745,7 @@ function viewBooking(id) {
     <div class="modal-actions">
 
       ${
-        booking.status === "Confirmed"
+        (booking.status === "Confirmed" || booking.status === "For Approval")
 
           ? `
 
